@@ -10,7 +10,7 @@ import Combine
 
 public typealias HubPublisher = AnyPublisher<HubPayload, Never>
 
-typealias HubSubject = PassthroughSubject<HubPayload, Never>
+public typealias HubSubject = PassthroughSubject<HubPayload, Never>
 
 /// Maintains a map of Subjects by Hub Channel. All downstream subscribers will
 /// attach to the same Subject.
@@ -31,7 +31,7 @@ extension HubCategoryBehavior {
     ///
     /// - Parameter channel: the channel to retrieve the subject
     /// - Returns: a HubSubject used to send events on `channel`
-    func subject(for channel: HubChannel) -> HubSubject {
+    public func subject(for channel: HubChannel) -> HubSubject {
         var sharedSubject: HubSubject!
 
         HubSubjectMap.default.subjectsByChannel.with { subjects in
