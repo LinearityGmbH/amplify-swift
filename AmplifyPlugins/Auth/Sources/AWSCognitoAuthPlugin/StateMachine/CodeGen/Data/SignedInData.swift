@@ -13,7 +13,20 @@ struct SignedInData {
     let signedInDate: Date
     let signInMethod: SignInMethod
     let deviceMetadata: DeviceMetadata
-    let cognitoUserPoolTokens: AWSCognitoUserPoolTokens
+    public let cognitoUserPoolTokens: AWSCognitoUserPoolTokens
+
+    public init(userId: String,
+         username: String,
+         signedInDate: Date,
+         cognitoUserPoolTokens: AWSCognitoUserPoolTokens
+    ) {
+        self.userId = userId
+        self.username = username
+        self.signedInDate = signedInDate
+        self.signInMethod = .apiBased(.userSRP)
+        self.deviceMetadata = DeviceMetadata.noData
+        self.cognitoUserPoolTokens = cognitoUserPoolTokens
+    }
 
     init(signedInDate: Date,
          signInMethod: SignInMethod,
