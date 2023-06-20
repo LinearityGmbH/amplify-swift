@@ -7,7 +7,7 @@
 
 import Foundation
 
-struct SignedInData {
+public struct SignedInData {
     let userId: String
     let username: String
     let signedInDate: Date
@@ -61,7 +61,7 @@ extension SignedInData: CustomDebugDictionaryConvertible {
 }
 
 extension SignedInData: CustomDebugStringConvertible {
-    var debugDescription: String {
+    public var debugDescription: String {
         debugDictionary.debugDescription
     }
 }

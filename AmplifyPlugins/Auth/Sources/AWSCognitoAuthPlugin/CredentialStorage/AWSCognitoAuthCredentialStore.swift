@@ -12,7 +12,8 @@ import Amplify
 struct AWSCognitoAuthCredentialStore {
 
     // Credential store constants
-    private let service = "com.amplify.awsCognitoAuthPlugin"
+    private let service: String
+    private let id: String
     private let sessionKey = "session"
     private let deviceMetadataKey = "deviceMetadata"
     private let deviceASFKey = "deviceASF"
@@ -30,13 +31,11 @@ struct AWSCognitoAuthCredentialStore {
     private let keychain: KeychainStoreBehavior
     private let userDefaults = UserDefaults.standard
 
-    init(
-        authConfiguration: AuthConfiguration,
-        accessGroup: String? = nil,
-        account: String? = nil
-    ) {
+    init(authConfiguration: AuthConfiguration, id: String = "", accessGroup: String? = nil) {
         self.authConfiguration = authConfiguration
-        self.keychain = KeychainStore(service: service, accessGroup: accessGroup, account: account)
+        self.id = id
+        self.service =  "com.amplify.awsCognitoAuthPlugin" + id
+        self.keychain = KeychainStore(service: service, accessGroup: accessGroup)
 
         if !userDefaults.bool(forKey: isKeychainConfiguredKey) {
             try? clearAllCredentials()
@@ -183,7 +182,7 @@ extension AWSCognitoAuthCredentialStore: AmplifyAuthCredentialStoreBehavior {
         try keychain._remove(key)
     }
 
-    private func clearAllCredentials() throws {
+    func clearAllCredentials() throws {
         try keychain._removeAll()
     }
 
