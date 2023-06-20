@@ -28,9 +28,6 @@ public final class AWSCognitoAuthPlugin: AWSCognitoAuthPluginBehavior {
 
     var analyticsHandler: UserPoolAnalyticsBehavior!
 
-    var keychainAccessGroup: String?
-    var keychainAccount: String?
-
     var taskQueue: TaskQueue<Any>!
 
     var httpClientEngineProxy: HttpClientEngineProxy?
@@ -44,8 +41,6 @@ public final class AWSCognitoAuthPlugin: AWSCognitoAuthPluginBehavior {
     }
 
     /// Instantiates an instance of the AWSCognitoAuthPlugin.
-    public init(keychainAccessGroup: String? = nil, keychainAccount: String? = nil) {
-        self.keychainAccessGroup = keychainAccessGroup
-        self.keychainAccount = keychainAccount
+    public init() {
     }
 }
