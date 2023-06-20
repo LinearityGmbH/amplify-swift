@@ -11,6 +11,6 @@ import Amplify
 extension AWSCognitoAuthPlugin: Resettable {
 
     public func reset() {
-        // TODO: Reset other parts
+        try? makeCredentialStore().deleteCredential()
     }
 }

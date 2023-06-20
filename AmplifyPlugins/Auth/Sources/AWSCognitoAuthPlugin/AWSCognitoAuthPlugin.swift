@@ -32,6 +32,8 @@ public final class AWSCognitoAuthPlugin: AWSCognitoAuthPluginBehavior {
 
     var httpClientEngineProxy: HttpClientEngineProxy?
 
+    public internal(set) var id: String!
+
     @_spi(InternalAmplifyConfiguration)
     internal(set) public var jsonConfiguration: JSONValue?
 
@@ -41,6 +43,11 @@ public final class AWSCognitoAuthPlugin: AWSCognitoAuthPluginBehavior {
     }
 
     /// Instantiates an instance of the AWSCognitoAuthPlugin.
-    public init() {
+    public init(id: String) {
+        self.id = id
+    }
+
+    public func storeSignedInData(_ data: SignedInData) throws {
+        try makeCredentialStore().saveCredential(AmplifyCredentials.userPoolOnly(signedInData: data))
     }
 }
