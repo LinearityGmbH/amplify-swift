@@ -48,6 +48,8 @@ public final class AWSCognitoAuthPlugin: AWSCognitoAuthPluginBehavior {
     }
 
     public func storeSignedInData(_ data: SignedInData) throws {
+        /// TODO: it's probably possible to make this better by emitting a right sequence of events:
+        /// e.g. execute .finalizeSignIn(data)?
         try makeCredentialStore().saveCredential(AmplifyCredentials.userPoolOnly(signedInData: data))
         try self.configure(using: jsonConfiguration!)
     }
