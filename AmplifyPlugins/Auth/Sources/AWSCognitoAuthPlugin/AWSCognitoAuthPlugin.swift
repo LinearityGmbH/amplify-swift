@@ -29,7 +29,7 @@ public final class AWSCognitoAuthPlugin: AWSCognitoAuthPluginBehavior {
     var analyticsHandler: UserPoolAnalyticsBehavior!
 
     var keychainAccessGroup: String?
-    public internal(set) var keychainAccount: String?
+    var keychainAccount: String?
 
     var taskQueue: TaskQueue<Any>!
 
