@@ -49,5 +49,6 @@ public final class AWSCognitoAuthPlugin: AWSCognitoAuthPluginBehavior {
 
     public func storeSignedInData(_ data: SignedInData) throws {
         try makeCredentialStore().saveCredential(AmplifyCredentials.userPoolOnly(signedInData: data))
+        try self.configure(using: jsonConfiguration!)
     }
 }
