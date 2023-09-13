@@ -32,8 +32,6 @@ public final class AWSCognitoAuthPlugin: AWSCognitoAuthPluginBehavior {
 
     var httpClientEngineProxy: HttpClientEngineProxy?
 
-    public internal(set) var id: String!
-
     @_spi(InternalAmplifyConfiguration)
     internal(set) public var jsonConfiguration: JSONValue?
 
@@ -42,11 +40,9 @@ public final class AWSCognitoAuthPlugin: AWSCognitoAuthPluginBehavior {
         return "awsCognitoAuthPlugin"
     }
 
-    /// Instantiates an instance of the AWSCognitoAuthPlugin.
-    public init(id: String) {
-        self.id = id
+    public init() {
     }
-
+    
     public func storeSignedInData(_ data: SignedInData) throws {
         /// TODO: it's probably possible to make this better by emitting a right sequence of events:
         /// e.g. execute .finalizeSignIn(data)?

@@ -140,7 +140,7 @@ extension AWSCognitoAuthPlugin {
     }
 
     func makeCredentialStore() -> AmplifyAuthCredentialStoreBehavior {
-        AWSCognitoAuthCredentialStore(authConfiguration: authConfiguration, id: id)
+        AWSCognitoAuthCredentialStore(authConfiguration: authConfiguration)
     }
 
     private func makeLegacyKeychainStore(service: String) -> KeychainStoreBehavior {
