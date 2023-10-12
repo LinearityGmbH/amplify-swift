@@ -6,10 +6,13 @@
 //
 
 import Amplify
+import AWSPinpoint
 import Foundation
 @_spi(InternalAWSPinpoint) import InternalAWSPinpoint
 import UserNotifications
-#if canImport(UIKit)
+#if canImport(WatchKit)
+import WatchKit
+#elseif canImport(UIKit)
 import UIKit
 #elseif canImport(AppKit)
 import AppKit
@@ -46,6 +49,7 @@ extension AWSPinpointPushNotificationsPlugin {
         )
     }
 
+#if !os(tvOS)
     public func recordNotificationOpened(_ response: UNNotificationResponse) async throws {
         let applicationState = await self.applicationState
         await recordNotification(
@@ -53,6 +57,14 @@ extension AWSPinpointPushNotificationsPlugin {
             applicationState: applicationState,
             action: .opened
         )
+    }
+#endif
+
+    /// Retrieves the escape hatch to perform actions directly on PinpointClient.
+    ///
+    /// - Returns: PinpointClientProtocol instance
+    public func getEscapeHatch() -> PinpointClientProtocol {
+        pinpoint.pinpointClient
     }
 
     private func recordNotification(_ userInfo: [String: Any],
@@ -112,7 +124,7 @@ extension AWSPinpointPushNotificationsPlugin {
     @MainActor
     private func handleDeeplinking(for url: URL) {
         log.verbose("Received deeplink: \(url)")
-    #if canImport(UIKit)
+    #if canImport(UIKit) && !os(watchOS)
         if UIApplication.shared.canOpenURL(url) {
             UIApplication.shared.open(url)
         }
@@ -123,8 +135,14 @@ extension AWSPinpointPushNotificationsPlugin {
 
     @MainActor
     private var applicationState: ApplicationState {
-    #if canImport(UIKit)
-        switch UIApplication.shared.applicationState {
+    #if canImport(WatchKit)
+        let application = WKExtension.shared()
+    #elseif canImport(UIKit)
+        let application = UIApplication.shared
+    #endif
+        
+    #if canImport(UIKit) || canImport(WatchKit)
+        switch application.applicationState {
         case .background:
             return .background
         case .active:

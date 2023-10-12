@@ -1,5 +1,132 @@
 # Changelog
 
+## 2.19.0 (2023-09-28)
+
+### Features
+
+- **datastore**: filter authrules with invalid ownerfield (#3223)
+
+## 2.18.2 (2023-09-28)
+
+### Bug Fixes
+
+- **datastore**: Continue initial sync if atleast one model syncs successfully and other models fail due to Unauthorized API error (#3224)
+- **datastore**: call errorHandler in Sync operation when failure
+
+## 2.18.1 (2023-09-25)
+
+### Bug Fixes
+
+- **core**: add Foundation HTTP client for watchOS / tvOS (#3230)
+
+## 2.18.0 (2023-09-21)
+
+### Features
+
+- Setting mininum watchOS version to 9 (#3229)
+- change swift-tools-version to 5.7 (#3193)
+
+## 2.17.2 (2023-09-18)
+
+### Bug Fixes
+
+- **datastore**: use unwrapped storageEngine to perform datastore operations (#3204)
+- **datastore**: using URLProtocol monitor auth request headers (#3221)
+- **api**: change request interceptors applying logic (#3190)
+- **logging**: fix issue with logger namespace not being set (#3213)
+- **datastore**: wrap failures to result when applying remote update events (#3187)
+
+## 2.17.1 (2023-09-05)
+
+### Bug Fixes
+
+- **logging**: create log file if it doesn't exist (#3202)
+- **PushNotifications**: Adding missing escape hatch to the plugin (#3201)
+
+## 2.17.0 (2023-08-31)
+
+### Features
+
+- **auth**: add userID property to AuthSignUpResult (#3192)
+
+## 2.16.1 (2023-08-30)
+
+### Bug Fixes
+
+- **auth**: hostedui extract error_description query pararm (#3183)
+- **Auth**: Adding the ability to keep old preferred methods (#3189)
+
+## 2.16.0 (2023-08-28)
+
+### Features
+
+- **Auth**: Added TOTP support in Auth plugin (#3072)
+
+## 2.15.5 (2023-08-28)
+
+### Bug Fixes
+
+- update user agent values to be consistent across plugins (#3178)
+
+## 2.15.4 (2023-08-25)
+
+### Bug Fixes
+
+- **core**: update keychain setter for macOS (#3174)
+
+## 2.15.3 (2023-08-24)
+
+## 2.15.2 (2023-08-03)
+
+### Bug Fixes
+
+- **Auth**: Refactor the expires in logic of the authentication result (#3114)
+- **logging**: update flushlog to be blocking end to end (#3113)
+- **logging**: delete logs when user identifier changes (#3110)
+
+## 2.15.1 (2023-07-24)
+
+## 2.15.0 (2023-07-18)
+
+### Features
+
+- **logging**: add CloudWatch Logging plugin (#3095)
+
+## 2.14.1 (2023-07-13)
+
+### Bug Fixes
+
+- **predictions**: add method to send socket close frame (#3081)
+
+## 2.14.0 (2023-07-13)
+
+### Features
+
+- **auth**: Add OIDC support types & docs (#3064) (#3082)
+
+## 2.13.0 (2023-07-13)
+
+### Features
+
+- Add default reset implementation for Plugins (#3080)
+
+### Bug Fixes
+
+- encoded key ordering (#3057)
+
+## 2.12.0 (2023-06-26)
+
+### Features
+
+- Adding support for tvOS and watchOS (#3051)
+
+## 2.11.7 (2023-06-20)
+
+### Bug Fixes
+
+- **datastore**: support CPK sort key with AWS date types (#3020)
+- **datastore**: support CPK with sortKey for GraphQL scalar types (#3012)
+
 ## 2.11.6 (2023-06-07)
 
 ### Bug Fixes

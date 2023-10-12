@@ -1,6 +1,12 @@
 name: Integration Tests
 on:
   workflow_dispatch:
+  workflow_call:
+    inputs:
+      identifier:
+        required: true
+        type: string
+
   push:
     branches: [main]
 
@@ -9,8 +15,8 @@ permissions:
     contents: read
 
 concurrency:
-  group: ${{ github.head_ref || github.run_id }}
-  cancel-in-progress: true
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.ref_name != 'main'}}
 
 jobs:
   prepare-for-test:
@@ -57,4 +63,9 @@ jobs:
   storage-test:
     needs: prepare-for-test
     uses: ./.github/workflows/integ_test_storage.yml
+    secrets: inherit
+
+  logging-test:
+    needs: prepare-for-test
+    uses: ./.github/workflows/integ_test_logging.yml
     secrets: inherit

@@ -6,6 +6,7 @@
 //
 
 import Amplify
+import AWSPinpoint
 @_spi(InternalAWSPinpoint) @testable import InternalAWSPinpoint
 @testable import AWSPinpointPushNotificationsPlugin
 import UserNotifications
@@ -174,6 +175,7 @@ class AWSPinpointPushNotificationsPluginClientBehaviourTests: AWSPinpointPushNot
     }
     
     // MARK: - Record Notification opened tests
+#if !os(tvOS)
     func testRecordNotificationOpened_withValidCampaignPayload_shouldRecordEvent() async throws {
         let response = UNNotificationResponse(coder: createCoder(for: .campaign))!
         try await plugin.recordNotificationOpened(response)
@@ -202,6 +204,20 @@ class AWSPinpointPushNotificationsPluginClientBehaviourTests: AWSPinpointPushNot
         XCTAssertNil(mockPinpoint.mockedCreatedEvent?.eventType)
         XCTAssertEqual(mockPinpoint.setRemoteGlobalAttributesCount, 0)
         XCTAssertEqual(mockPinpoint.recordCount, 0)
+    }
+#endif
+    
+    // - MARK: Escape Hatch tests
+    /// Given: A configured AWSPinpointPushNotificationsPlugin instance
+    /// When: The getEscapeHatch API is invoked
+    /// Then: The underlying PinpointClientProtocol instance is retrieved
+    func testGetEscapeHatch_shouldReturnPinpointClient() {
+        guard let escapeHatch = plugin.getEscapeHatch() as? PinpointClient else {
+            XCTFail("Unable to retrieve PinpointClient")
+            return
+        }
+        
+        XCTAssertTrue(escapeHatch === (mockPinpoint.pinpointClient as? PinpointClient))
     }
     
     private func createUserInfo(for source: PushNotification.Source) -> Notifications.Push.UserInfo {

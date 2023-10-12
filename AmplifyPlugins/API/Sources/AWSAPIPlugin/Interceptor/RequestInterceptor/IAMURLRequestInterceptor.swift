@@ -16,7 +16,8 @@ struct IAMURLRequestInterceptor: URLRequestInterceptor {
     let iamCredentialsProvider: IAMCredentialsProvider
     let region: AWSRegionType
     let endpointType: AWSAPICategoryPluginEndpointType
-
+    private let userAgent = AmplifyAWSServiceConfiguration.frameworkMetaData().description
+    
     init(iamCredentialsProvider: IAMCredentialsProvider,
          region: AWSRegionType,
          endpointType: AWSAPICategoryPluginEndpointType) {
@@ -35,9 +36,8 @@ struct IAMURLRequestInterceptor: URLRequestInterceptor {
             throw APIError.unknown("Could not get host from mutable request", "")
         }
 
-        request.setValue(URLRequestConstants.ContentType.applicationJson, forHTTPHeaderField: URLRequestConstants.Header.contentType)
         request.setValue(host, forHTTPHeaderField: "host")
-        request.setValue(AWSAPIPluginsCore.baseUserAgent(), forHTTPHeaderField: URLRequestConstants.Header.userAgent)
+        request.setValue(userAgent, forHTTPHeaderField: URLRequestConstants.Header.userAgent)
 
         let httpMethod = (request.httpMethod?.uppercased())
             .flatMap(HttpMethodType.init(rawValue:)) ?? .get
