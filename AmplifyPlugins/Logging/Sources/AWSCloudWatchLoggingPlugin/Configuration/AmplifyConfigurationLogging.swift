@@ -8,13 +8,6 @@
 import Foundation
 import Amplify
 
-extension AWSCognitoAuthPlugin: Resettable {
-
-    public func reset() {
-        try? makeCredentialStore().deleteCredential()
-    }
-}
-
 public struct AmplifyConfigurationLogging: Codable {
     public let awsCloudWatchLoggingPlugin: AWSCloudWatchLoggingPluginConfiguration
 }
