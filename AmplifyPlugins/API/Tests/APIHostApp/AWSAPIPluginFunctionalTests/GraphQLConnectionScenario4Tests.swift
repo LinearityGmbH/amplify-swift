@@ -8,7 +8,11 @@
 import XCTest
 @testable import AWSAPIPlugin
 @testable import Amplify
+#if os(watchOS)
+@testable import APIWatchApp
+#else
 @testable import APIHostApp
+#endif
 
 /*
  (Belongs to) A connection that is bi-directional by adding a many-to-one connection to the type that already have a one-to-many connection.
@@ -209,7 +213,7 @@ class GraphQLConnectionScenario4Tests: XCTestCase {
         }
         let predicate = field("postID").eq(post.id)
         var results: List<Comment4>?
-        let result = try await Amplify.API.query(request: .list(Comment4.self, where: predicate, limit: 1))
+        let result = try await Amplify.API.query(request: .list(Comment4.self, where: predicate, limit: 3000))
         switch result {
         case .success(let comments):
             results = comments

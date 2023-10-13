@@ -164,6 +164,7 @@ final class AWSInitialSyncOrchestrator: InitialSyncOrchestrator {
             allMessages.joined(separator: "\n"),
             underlyingError
         )
+        
         return .failure(syncError)
     }
 
@@ -176,10 +177,17 @@ final class AWSInitialSyncOrchestrator: InitialSyncOrchestrator {
     }
 }
 
-extension AWSInitialSyncOrchestrator: DefaultLogger { }
+extension AWSInitialSyncOrchestrator: DefaultLogger {
+    public static var log: Logger {
+        Amplify.Logging.logger(forCategory: CategoryType.dataStore.displayName, forNamespace: String(describing: self))
+    }
+    public var log: Logger {
+        Self.log
+    }
+}
 
 extension AWSInitialSyncOrchestrator: Resettable {
-    func reset() {
+    func reset() async {
         syncOperationQueue.cancelAllOperations()
         syncOperationQueue.waitUntilAllOperationsAreFinished()
     }
@@ -201,7 +209,7 @@ extension AWSInitialSyncOrchestrator {
         return errorTypeValue
     }
 
-    private func isUnauthorizedError(_ error: DataStoreError) -> Bool {
+    func isUnauthorizedError(_ error: DataStoreError) -> Bool {
         guard case let .sync(_, _, underlyingError) = error,
               let datastoreError = underlyingError as? DataStoreError
               else {
@@ -238,6 +246,22 @@ extension AWSInitialSyncOrchestrator {
            case .unauthorized = AppSyncErrorType(errorTypeValue) {
             return true
         }
+        
+        // Check is API error is of unauthorized type
+        if case let .api(amplifyError, _) = datastoreError,
+            let apiError = amplifyError as? APIError {
+            if case .operationError(let errorDescription, _, _) = apiError,
+               errorDescription.range(of: "Unauthorized",
+                                      options: .caseInsensitive) != nil {
+                return true
+            }
+            
+            if case .httpStatusError(let statusCode, _) = apiError,
+               (statusCode == 401 || statusCode == 403) {
+                return true
+            }
+        }
+        
         return false
     }
 
