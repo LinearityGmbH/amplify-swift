@@ -28,7 +28,7 @@ public struct SignedInData {
         self.cognitoUserPoolTokens = cognitoUserPoolTokens
     }
 
-    init(signedInDate: Date,
+    public init(signedInDate: Date,
          signInMethod: SignInMethod,
          deviceMetadata: DeviceMetadata = .noData,
          cognitoUserPoolTokens: AWSCognitoUserPoolTokens

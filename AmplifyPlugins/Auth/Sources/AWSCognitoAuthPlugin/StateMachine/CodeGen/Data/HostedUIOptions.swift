@@ -8,7 +8,7 @@
 import Foundation
 import Amplify
 
-struct HostedUIOptions {
+public struct HostedUIOptions: Codable  {
 
     let scopes: [String]
 
@@ -17,9 +17,17 @@ struct HostedUIOptions {
     let presentationAnchor: AuthUIPresentationAnchor?
 
     let preferPrivateSession: Bool
-}
-
-extension HostedUIOptions: Codable {
+    
+    public init(scopes: [String],
+                providerInfo: HostedUIProviderInfo,
+                presentationAnchor: AuthUIPresentationAnchor?,
+                preferPrivateSession: Bool
+    ) {
+        self.scopes = scopes
+        self.providerInfo = providerInfo
+        self.presentationAnchor = presentationAnchor
+        self.preferPrivateSession = preferPrivateSession
+    }
 
     enum CodingKeys: String, CodingKey {
 
@@ -30,7 +38,7 @@ extension HostedUIOptions: Codable {
         case preferPrivateSession
     }
 
-    init(from decoder: Decoder) throws {
+    public init(from decoder: Decoder) throws {
         let values = try decoder.container(keyedBy: CodingKeys.self)
         scopes = try values.decode(Array.self, forKey: .scopes)
         providerInfo = try values.decode(HostedUIProviderInfo.self, forKey: .providerInfo)
@@ -38,7 +46,7 @@ extension HostedUIOptions: Codable {
         presentationAnchor = nil
     }
 
-    func encode(to encoder: Encoder) throws {
+    public func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
         try container.encode(scopes, forKey: .scopes)
         try container.encode(providerInfo, forKey: .providerInfo)
