@@ -41,6 +41,44 @@ class StorageMultipartUploadSessionTests: XCTestCase {
         XCTAssertFalse(session.partsFailed)
     }
 
+    /// Given: A StorageTransferTask with a valid StorageTransferType
+    /// When: A StorageMultipartUploadSession is created from the task
+    /// Then: Its values are set correctly
+    func testSessionCreation_withTransferTask() throws {
+        let client = MockMultipartUploadClient()
+        let transferType: StorageTransferType = .multiPartUpload(onEvent: {_ in })
+        let transferTask = StorageTransferTask(
+            transferType: transferType,
+            bucket: "bucket",
+            key: "key"
+        )
+
+        let session = try XCTUnwrap(StorageMultipartUploadSession(client: client, transferTask: transferTask, multipartUpload: .none, logger: MockLogger()))
+        XCTAssertEqual(session.partsCount, 0)
+        XCTAssertEqual(session.inProgressCount, 0)
+        XCTAssertFalse(session.partsCompleted)
+        XCTAssertFalse(session.partsFailed)
+    }
+
+    /// Given: A StorageTransferTask with an invalid StorageTransferType
+    /// When: A StorageMultipartUploadSession is created from the task
+    /// Then: Its values are set correctly
+    func testSessionCreation_withTransferTask_andInvalidTransferType_shouldReturnNil() throws {
+        let client = MockMultipartUploadClient()
+        let transferType: StorageTransferType = .list(onEvent: {_ in })
+        let transferTask = StorageTransferTask(
+            transferType: transferType,
+            bucket: "bucket",
+            key: "key"
+        )
+
+        XCTAssertNil(StorageMultipartUploadSession(
+            client: client,
+            transferTask: transferTask,
+            multipartUpload: .none
+        ))
+    }
+
     func testCompletedMultipartUploadSession() throws {
         let initiatedExp = expectation(description: "Initiated")
         let completedExp = expectation(description: "Completed")
@@ -105,7 +143,7 @@ class StorageMultipartUploadSessionTests: XCTestCase {
         let client = MockMultipartUploadClient() // creates an UploadFile for the mock process
         client.didCompletePartUpload = { (_, partNumber, _, _) in
             if partNumber == 5 {
-                closureSession?.handle(multipartUploadEvent: .aborting(error: nil))
+                closureSession?.cancel()
                 XCTAssertTrue(closureSession?.isAborted ?? false)
             }
 
@@ -156,10 +194,10 @@ class StorageMultipartUploadSessionTests: XCTestCase {
             if pauseCount == 0, partNumber > 5, bytesTransferred > 0 {
                 print("pausing on \(partNumber)")
                 pauseCount += 1
-                closureSession?.handle(multipartUploadEvent: .pausing)
+                closureSession?.pause()
                 XCTAssertTrue(closureSession?.isPaused ?? false)
                 print("resuming on \(partNumber)")
-                closureSession?.handle(multipartUploadEvent: .resuming)
+                closureSession?.resume()
                 XCTAssertFalse(closureSession?.isPaused ?? true)
             }
         }
@@ -283,7 +321,7 @@ class StorageMultipartUploadSessionTests: XCTestCase {
     // MARK: - Private -
 
     private func createFile() throws -> URL {
-        let size = minimumPartSize
+        let size = Int(minimumPartSize)
         let parts: [String] = [
             Array(repeating: "a", count: size).joined(),
             Array(repeating: "b", count: size).joined(),
@@ -294,11 +332,7 @@ class StorageMultipartUploadSessionTests: XCTestCase {
         ]
         let string = parts.joined()
 
-        guard let data = string.data(using: .utf8) else {
-            XCTFail("Failed to create data for file")
-            throw Failure.unableToCreateData
-        }
-
+        let data = Data(string.utf8)
         let fileURL = try FileSystem.default.createTemporaryFile(data: data)
         return fileURL
     }

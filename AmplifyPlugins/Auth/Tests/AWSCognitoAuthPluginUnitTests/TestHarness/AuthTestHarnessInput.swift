@@ -23,9 +23,10 @@ struct AuthTestHarnessInput {
 
 extension AuthTestHarnessInput {
 
-    static func createInput(from specification: FeatureSpecification) -> AuthTestHarnessInput {
-
-        return AuthTestHarnessInput(
+    static func createInput(
+            from specification: FeatureSpecification
+        ) async -> AuthTestHarnessInput {
+            return await AuthTestHarnessInput(
             initialAuthState: specification.preConditions.initialAuthState,
             expectedAuthState: getExpectedAuthState(from: specification),
             amplifyAPI: getAmplifyAPIUnderTest(from: specification),
@@ -39,8 +40,9 @@ extension AuthTestHarnessInput {
     }
 
     private static func getCognitoAPI(
-        from specification: FeatureSpecification) -> [API.APIName: CognitoAPI] {
-            return CognitoAPIDecodingHelper.decode(with: specification)
+        from specification: FeatureSpecification
+    ) async -> [API.APIName: CognitoAPI] {
+        return await CognitoAPIDecodingHelper.decode(with: specification)
     }
 
     private static func getExpectedAuthState(from specification: FeatureSpecification) -> AuthState? {
@@ -81,21 +83,19 @@ enum AmplifyAPI {
 }
 
 enum CognitoAPI {
-    case forgotPassword(CognitoAPIData<ForgotPasswordInput, ForgotPasswordOutputResponse, ForgotPasswordOutputError>)
-    case signUp(CognitoAPIData<SignUpInput, SignUpOutputResponse, SignUpOutputError>)
-    case deleteUser(CognitoAPIData<DeleteUserInput, DeleteUserOutputResponse, DeleteUserOutputError>)
-    case respondToAuthChallenge(CognitoAPIData<RespondToAuthChallengeInput, RespondToAuthChallengeOutputResponse, RespondToAuthChallengeOutputError>)
-    case getId(CognitoAPIData<GetIdInput, GetIdOutputResponse, GetIdOutputError>)
-    case getCredentialsForIdentity(CognitoAPIData<GetCredentialsForIdentityInput, GetCredentialsForIdentityOutputResponse, GetCredentialsForIdentityOutputError>)
-    case confirmDevice(CognitoAPIData<ConfirmDeviceInput, ConfirmDeviceOutputResponse, ConfirmDeviceOutputError>)
-    case initiateAuth(CognitoAPIData<InitiateAuthInput, InitiateAuthOutputResponse, InitiateAuthOutputError>)
-    case revokeToken(CognitoAPIData<RevokeTokenInput, RevokeTokenOutputResponse, RevokeTokenOutputError>)
-    case globalSignOut(CognitoAPIData<GlobalSignOutInput, GlobalSignOutOutputResponse, GlobalSignOutOutputError>)
+    case forgotPassword(CognitoAPIData<ForgotPasswordInput, ForgotPasswordOutput>)
+    case signUp(CognitoAPIData<SignUpInput, SignUpOutput>)
+    case deleteUser(CognitoAPIData<DeleteUserInput, DeleteUserOutput>)
+    case respondToAuthChallenge(CognitoAPIData<RespondToAuthChallengeInput, RespondToAuthChallengeOutput>)
+    case getId(CognitoAPIData<GetIdInput, GetIdOutput>)
+    case getCredentialsForIdentity(CognitoAPIData<GetCredentialsForIdentityInput, GetCredentialsForIdentityOutput>)
+    case confirmDevice(CognitoAPIData<ConfirmDeviceInput, ConfirmDeviceOutput>)
+    case initiateAuth(CognitoAPIData<InitiateAuthInput, InitiateAuthOutput>)
+    case revokeToken(CognitoAPIData<RevokeTokenInput, RevokeTokenOutput>)
+    case globalSignOut(CognitoAPIData<GlobalSignOutInput, GlobalSignOutOutput>)
 }
 
-struct CognitoAPIData<Input: Decodable, Output: Decodable, E: Swift.Error & ClientRuntime.HttpResponseBinding> {
-
+struct CognitoAPIData<Input: Decodable, Output: Decodable> {
     let expectedInput: Input?
-    let output: Result<Output, E>
-
+    let output: Result<Output, Error>
 }

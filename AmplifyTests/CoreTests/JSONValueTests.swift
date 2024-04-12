@@ -13,8 +13,8 @@ class JSONValueTests: XCTestCase {
     func testDecode() throws {
         let decoder = JSONDecoder()
         let sourceString = #"{"stringValue": "a string", "numberValue": 123.45, "booleanValue": true}"#
-        let sourceData = sourceString.data(using: .utf8)
-        let decodedObject = try decoder.decode(JSONValue.self, from: sourceData!)
+        let sourceData = Data(sourceString.utf8)
+        let decodedObject = try decoder.decode(JSONValue.self, from: sourceData)
 
         let expectedObject: JSONValue = [
             "booleanValue": true,
@@ -90,4 +90,50 @@ class JSONValueTests: XCTestCase {
         let literalValue: JSONValue = ["foo": "bar"]
         XCTAssertEqual(enumValue, literalValue)
     }
+
+    func testDynamicMemberLookup() {
+        let json = JSONValue.object(["foo": .object(["bar": 2])])
+        XCTAssertEqual(json.foo?.bar?.intValue, 2)
+    }
+
+    func testIntValue() {
+        let offset = 100000
+        let badInt = JSONValue.number(Double(Int.max))
+        XCTAssertNil(badInt.intValue)
+        let badInt2 = JSONValue.number(Double(Int.min) - Double(offset))
+        XCTAssertNil(badInt2.intValue)
+        let goodInt = JSONValue.number(Double(100))
+        XCTAssertEqual(goodInt.intValue, 100)
+    }
+
+    func testDoubleValue() {
+        let double = 1000.0
+        XCTAssertEqual(JSONValue.number(double).doubleValue, double)
+    }
+
+    func testStringValue() {
+        let str = UUID().uuidString
+        XCTAssertEqual(JSONValue.string(str).stringValue, str)
+    }
+
+    func testBooleanValue() {
+        let bool = false
+        XCTAssertEqual(JSONValue.boolean(bool).booleanValue, bool)
+    }
+
+    func testObjectValue() {
+        let obj: [String: JSONValue] = [
+            "a": "a",
+            "b": 0,
+            "c": false
+        ]
+
+        XCTAssertEqual(JSONValue.object(obj).asObject, obj)
+    }
+
+    func testArrayValue() {
+        let arr: [JSONValue] = ["a", 0, false]
+        XCTAssertEqual(JSONValue.array(arr).asArray, arr)
+    }
+
 }

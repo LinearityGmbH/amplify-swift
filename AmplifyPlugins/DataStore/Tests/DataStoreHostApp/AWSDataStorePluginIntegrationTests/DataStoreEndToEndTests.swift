@@ -589,10 +589,17 @@ class DataStoreEndToEndTests: SyncEngineIntegrationTestBase {
         let syncExpression = DataStoreSyncExpression(modelSchema: Post.schema) {
             Post.keys.createdAt >= startTime
         }
+        #if os(watchOS)
+        await setUp(
+            withModels: TestModelRegistration(),
+            dataStoreConfiguration: .custom(syncExpressions: [syncExpression], disableSubscriptions: { false })
+        )
+        #else
         await setUp(
             withModels: TestModelRegistration(),
             dataStoreConfiguration: .custom(syncExpressions: [syncExpression])
         )
+        #endif
         try await startAmplifyAndWaitForSync()
 
         let postCount = 1_000
@@ -686,7 +693,7 @@ class DataStoreEndToEndTests: SyncEngineIntegrationTestBase {
 
         _ = try await Amplify.DataStore.save(newPost)
         
-        await waitForExpectations(timeout: networkTimeout)
+        await fulfillment(of: [createReceived], timeout: networkTimeout)
     }
 }
 

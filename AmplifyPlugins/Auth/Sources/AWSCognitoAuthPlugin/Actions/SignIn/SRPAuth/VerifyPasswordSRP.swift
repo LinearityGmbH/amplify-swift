@@ -13,11 +13,11 @@ struct VerifyPasswordSRP: Action {
     let identifier = "VerifyPasswordSRP"
 
     let stateData: SRPStateData
-    let authResponse: InitiateAuthOutputResponse
+    let authResponse: InitiateAuthOutput
     let clientMetadata: ClientMetadata
 
     init(stateData: SRPStateData,
-         authResponse: InitiateAuthOutputResponse,
+         authResponse: InitiateAuthOutput,
          clientMetadata: ClientMetadata) {
         self.stateData = stateData
         self.authResponse = authResponse
@@ -110,11 +110,7 @@ struct VerifyPasswordSRP: Action {
             return false
         }
 
-        if let serviceError: RespondToAuthChallengeOutputError = error.internalAWSServiceError(),
-           case .resourceNotFoundException = serviceError {
-            return true
-        }
-        return false
+        return error is AWSCognitoIdentityProvider.ResourceNotFoundException
     }
 }
 
@@ -122,7 +118,7 @@ extension VerifyPasswordSRP: DefaultLogger {
     public static var log: Logger {
         Amplify.Logging.logger(forCategory: CategoryType.auth.displayName, forNamespace: String(describing: self))
     }
-    
+
     public var log: Logger {
         Self.log
     }

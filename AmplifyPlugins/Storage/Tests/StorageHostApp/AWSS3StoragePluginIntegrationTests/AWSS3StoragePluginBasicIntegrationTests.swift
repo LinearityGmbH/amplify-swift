@@ -61,13 +61,13 @@ class AWSS3StoragePluginBasicIntegrationTests: AWSS3StoragePluginTestBase {
     /// Then: The operation completes successfully
     func testUploadData() async throws {
         let key = UUID().uuidString
-        let data = key.data(using: .utf8)!
+        let data = Data(key.utf8)
 
         _ = try await Amplify.Storage.uploadData(key: key, data: data, options: nil).value
         _ = try await Amplify.Storage.remove(key: key)
 
         // Only the remove operation results in an SDK request
-        XCTAssertEqual(requestRecorder.sdkRequests.map { $0.method} , [.delete])
+        XCTAssertEqual(requestRecorder.sdkRequests.map { $0.method } , [.delete])
         try assertUserAgentComponents(sdkRequests: requestRecorder.sdkRequests)
 
         XCTAssertEqual(requestRecorder.urlRequests.map { $0.httpMethod }, ["PUT"])
@@ -79,7 +79,7 @@ class AWSS3StoragePluginBasicIntegrationTests: AWSS3StoragePluginTestBase {
     /// Then: The operation completes successfully
     func testUploadEmptyData() async throws {
         let key = UUID().uuidString
-        let data = "".data(using: .utf8)!
+        let data = Data("".utf8)
         _ = try await Amplify.Storage.uploadData(key: key, data: data, options: nil).value
         _ = try await Amplify.Storage.remove(key: key)
 
@@ -95,7 +95,7 @@ class AWSS3StoragePluginBasicIntegrationTests: AWSS3StoragePluginTestBase {
         let filePath = NSTemporaryDirectory() + key + ".tmp"
 
         let fileURL = URL(fileURLWithPath: filePath)
-        FileManager.default.createFile(atPath: filePath, contents: key.data(using: .utf8), attributes: nil)
+        FileManager.default.createFile(atPath: filePath, contents: Data(key.utf8), attributes: nil)
 
         _ = try await Amplify.Storage.uploadFile(key: key, local: fileURL, options: nil).value
         _ = try await Amplify.Storage.remove(key: key)
@@ -115,7 +115,7 @@ class AWSS3StoragePluginBasicIntegrationTests: AWSS3StoragePluginTestBase {
         let key = UUID().uuidString
         let filePath = NSTemporaryDirectory() + key + ".tmp"
         let fileURL = URL(fileURLWithPath: filePath)
-        FileManager.default.createFile(atPath: filePath, contents: "".data(using: .utf8), attributes: nil)
+        FileManager.default.createFile(atPath: filePath, contents: Data("".utf8), attributes: nil)
 
         _ = try await Amplify.Storage.uploadFile(key: key, local: fileURL, options: nil).value
         _ = try await Amplify.Storage.remove(key: key)
@@ -173,7 +173,7 @@ class AWSS3StoragePluginBasicIntegrationTests: AWSS3StoragePluginTestBase {
     /// Then: The operation completes successfully with the data retrieved
     func testDownloadDataToMemory() async throws {
         let key = UUID().uuidString
-        await uploadData(key: key, data: key.data(using: .utf8)!)
+        try await uploadData(key: key, data: Data(key.utf8))
         _ = try await Amplify.Storage.downloadData(key: key, options: .init()).value
         _ = try await Amplify.Storage.remove(key: key)
     }
@@ -184,8 +184,8 @@ class AWSS3StoragePluginBasicIntegrationTests: AWSS3StoragePluginTestBase {
     func testDownloadFile() async throws {
         let key = UUID().uuidString
         let timestamp = String(Date().timeIntervalSince1970)
-        let timestampData = timestamp.data(using: .utf8)!
-        await uploadData(key: key, data: timestampData)
+        let timestampData = Data(timestamp.utf8)
+        try await uploadData(key: key, data: timestampData)
         let filePath = NSTemporaryDirectory() + key + ".tmp"
         let fileURL = URL(fileURLWithPath: filePath)
         removeIfExists(fileURL)
@@ -209,7 +209,7 @@ class AWSS3StoragePluginBasicIntegrationTests: AWSS3StoragePluginTestBase {
     /// Then: The operation completes successfully with the URL retrieved
     func testGetRemoteURL() async throws {
         let key = UUID().uuidString
-        await uploadData(key: key, dataString: key)
+        try await uploadData(key: key, dataString: key)
 
         let remoteURL = try await Amplify.Storage.getURL(key: key)
 
@@ -244,7 +244,7 @@ class AWSS3StoragePluginBasicIntegrationTests: AWSS3StoragePluginTestBase {
         }
 
         // A S3 HeadObject call is expected
-        XCTAssertEqual(requestRecorder.sdkRequests.map { $0.method} , [.head])
+        XCTAssert(requestRecorder.sdkRequests.map(\.method).allSatisfy { $0 == .head })
         try assertUserAgentComponents(sdkRequests: requestRecorder.sdkRequests)
 
         XCTAssertEqual(requestRecorder.urlRequests.map { $0.httpMethod }, [])
@@ -274,7 +274,7 @@ class AWSS3StoragePluginBasicIntegrationTests: AWSS3StoragePluginTestBase {
     func testListFromPublic() async throws {
         let key = UUID().uuidString
         let expectedMD5Hex = "\"\(key.md5())\""
-        await uploadData(key: key, dataString: key)
+        try await uploadData(key: key, dataString: key)
         let options = StorageListRequest.Options(accessLevel: .guest,
                                                  targetIdentityId: nil,
                                                  path: key)
@@ -311,7 +311,7 @@ class AWSS3StoragePluginBasicIntegrationTests: AWSS3StoragePluginTestBase {
         for i in 0..<objectCount {
             let key = "\(path)/\(i).txt"
             let data = Data("\(i)".utf8)
-            await uploadData(key: key, data: data)
+            try await uploadData(key: key, data: data)
             uploadedKeys.append(key)
         }
 
@@ -382,7 +382,7 @@ class AWSS3StoragePluginBasicIntegrationTests: AWSS3StoragePluginTestBase {
         for fileIndex in 1 ... 10 {
             let key = folder + "file" + String(fileIndex) + ".txt"
             keys.append(key)
-            await uploadData(key: key, dataString: key)
+            try await uploadData(key: key, dataString: key)
         }
         let options = StorageListRequest.Options(accessLevel: .guest,
                                                  targetIdentityId: nil,
@@ -417,7 +417,7 @@ class AWSS3StoragePluginBasicIntegrationTests: AWSS3StoragePluginTestBase {
         for fileIndex in 1 ... 10 {
             let key = folder + "file" + String(fileIndex) + ".txt"
             keys.append(key)
-            await uploadData(key: key, dataString: key)
+            try await uploadData(key: key, dataString: key)
         }
 
         let options = StorageListRequest.Options(accessLevel: .guest,
@@ -451,7 +451,7 @@ class AWSS3StoragePluginBasicIntegrationTests: AWSS3StoragePluginTestBase {
     /// Then: The operation completes successfully with the key removed from storage
     func testRemoveKey() async throws {
         let key = UUID().uuidString
-        await uploadData(key: key, dataString: key)
+        try await uploadData(key: key, dataString: key)
 
         let result = try await Amplify.Storage.remove(key: key, options: nil)
         XCTAssertEqual(result, key)

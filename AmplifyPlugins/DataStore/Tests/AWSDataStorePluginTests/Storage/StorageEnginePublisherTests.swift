@@ -24,7 +24,7 @@ class StorageEnginePublisherTests: StorageEngineTestsBase {
             try storageAdapter.setUp(modelSchemas: StorageEngine.systemModelSchemas)
             syncEngine = MockRemoteSyncEngine()
             storageEngine = StorageEngine(storageAdapter: storageAdapter,
-                                          dataStoreConfiguration: .default,
+                                          dataStoreConfiguration: .testDefault(),
                                           syncEngine: syncEngine,
                                           validAPIPluginKey: validAPIPluginKey,
                                           validAuthPluginKey: validAuthPluginKey)
@@ -84,11 +84,15 @@ class StorageEnginePublisherTests: StorageEngineTestsBase {
         storageEngine.onReceive(receiveValue: .syncStarted)
         storageEngine.onReceive(receiveValue: .cleanedUp)
         storageEngine.onReceive(receiveValue: .cleanedUpForTermination)
-        wait(for: [receivedMutationEvent,
-                   receivedModelSyncedEvent,
-                   receivedSyncQueriesReadyEvent,
-                   receivedReadyEvent],
-                timeout: 1)
+        wait(
+            for: [
+                receivedMutationEvent,
+                receivedModelSyncedEvent,
+                receivedSyncQueriesReadyEvent,
+                receivedReadyEvent
+            ],
+            timeout: 1
+        )
         sink.cancel()
     }
 }

@@ -10,6 +10,7 @@ import Foundation
 import SQLite
 import AWSPluginsCore
 
+// swiftlint:disable type_body_length file_length
 /// [SQLite](https://sqlite.org) `StorageEngineAdapter` implementation. This class provides
 /// an integration layer between the AppSyncLocal `StorageEngine` and SQLite for local storage.
 final class SQLiteStorageEngineAdapter: StorageEngineAdapter {
@@ -117,8 +118,12 @@ final class SQLiteStorageEngineAdapter: StorageEngineAdapter {
         let delegate = SQLiteMutationSyncMetadataMigrationDelegate(
             storageAdapter: self,
             modelSchemas: modelSchemas)
-        let modelMigration = MutationSyncMetadataMigration(delegate: delegate)
-        let modelMigrations = ModelMigrations(modelMigrations: [modelMigration])
+        let mutationSyncMetadataMigration = MutationSyncMetadataMigration(delegate: delegate)
+
+        let modelSyncMetadataMigration = ModelSyncMetadataMigration(storageAdapter: self)
+
+        let modelMigrations = ModelMigrations(modelMigrations: [mutationSyncMetadataMigration,
+                                                                modelSyncMetadataMigration])
         do {
             try modelMigrations.apply()
         } catch {
@@ -143,9 +148,18 @@ final class SQLiteStorageEngineAdapter: StorageEngineAdapter {
                         condition: QueryPredicate? = nil,
                         eagerLoad: Bool = true,
                         completion: DataStoreCallback<M>) {
+        completion(save(model, 
+                        modelSchema: modelSchema,
+                        condition: condition,
+                        eagerLoad: eagerLoad))
+    }
+
+    func save<M: Model>(_ model: M,
+                        modelSchema: ModelSchema,
+                        condition: QueryPredicate? = nil,
+                        eagerLoad: Bool = true) -> DataStoreResult<M> {
         guard let connection = connection else {
-            completion(.failure(DataStoreError.nilSQLiteConnection()))
-            return
+            return .failure(DataStoreError.nilSQLiteConnection())
         }
         do {
             let modelType = type(of: model)
@@ -157,8 +171,7 @@ final class SQLiteStorageEngineAdapter: StorageEngineAdapter {
                     let dataStoreError = DataStoreError.invalidCondition(
                         "Cannot apply a condition on model which does not exist.",
                         "Save the model instance without a condition first.")
-                    completion(.failure(causedBy: dataStoreError))
-                    return
+                    return .failure(causedBy: dataStoreError)
                 }
 
                 let statement = InsertStatement(model: model, modelSchema: modelSchema)
@@ -174,9 +187,7 @@ final class SQLiteStorageEngineAdapter: StorageEngineAdapter {
                         let dataStoreError = DataStoreError.invalidCondition(
                         "Save failed due to condition did not match existing model instance.",
                         "The save will continue to fail until the model instance is updated.")
-                        completion(.failure(causedBy: dataStoreError))
-
-                        return
+                        return .failure(causedBy: dataStoreError)
                     }
                 }
 
@@ -187,23 +198,22 @@ final class SQLiteStorageEngineAdapter: StorageEngineAdapter {
             }
 
             // load the recent saved instance and pass it back to the callback
-            query(modelType, modelSchema: modelSchema,
-                  predicate: model.identifier(schema: modelSchema).predicate,
-                  eagerLoad: eagerLoad) {
-                switch $0 {
-                case .success(let result):
-                    if let saved = result.first {
-                        completion(.success(saved))
-                    } else {
-                        completion(.failure(.nonUniqueResult(model: modelType.modelName,
-                                                             count: result.count)))
-                    }
-                case .failure(let error):
-                    completion(.failure(error))
+            let queryResult = query(modelType, modelSchema: modelSchema,
+                                    predicate: model.identifier(schema: modelSchema).predicate,
+                                    eagerLoad: eagerLoad)
+            switch queryResult {
+            case .success(let result):
+                if let saved = result.first {
+                    return .success(saved)
+                } else {
+                    return .failure(.nonUniqueResult(model: modelType.modelName,
+                                                     count: result.count))
                 }
+            case .failure(let error):
+                return .failure(error)
             }
         } catch {
-            completion(.failure(causedBy: error))
+            return .failure(causedBy: error)
         }
     }
 
@@ -242,8 +252,7 @@ final class SQLiteStorageEngineAdapter: StorageEngineAdapter {
             }
         }
     }
-    
-    
+
     func delete<M>(_ modelType: M.Type,
                    modelSchema: ModelSchema,
                    withIdentifier identifier: ModelIdentifierProtocol,
@@ -261,7 +270,7 @@ final class SQLiteStorageEngineAdapter: StorageEngineAdapter {
             }
         }
     }
-    
+
     func delete(untypedModelType modelType: Model.Type,
                 modelSchema: ModelSchema,
                 withId id: Model.Identifier,
@@ -273,7 +282,7 @@ final class SQLiteStorageEngineAdapter: StorageEngineAdapter {
                condition: condition,
                completion: completion)
     }
-    
+
     func delete(untypedModelType modelType: Model.Type,
                 modelSchema: ModelSchema,
                 withIdentifier id: ModelIdentifierProtocol,
@@ -317,9 +326,22 @@ final class SQLiteStorageEngineAdapter: StorageEngineAdapter {
                          paginationInput: QueryPaginationInput? = nil,
                          eagerLoad: Bool = true,
                          completion: DataStoreCallback<[M]>) {
+        completion(query(modelType,
+                         modelSchema: modelSchema,
+                         predicate: predicate,
+                         sort: sort,
+                         paginationInput: paginationInput,
+                         eagerLoad: eagerLoad))
+    }
+
+    private func query<M: Model>(_ modelType: M.Type,
+                         modelSchema: ModelSchema,
+                         predicate: QueryPredicate? = nil,
+                         sort: [QuerySortDescriptor]? = nil,
+                         paginationInput: QueryPaginationInput? = nil,
+                         eagerLoad: Bool = true) -> DataStoreResult<[M]> {
         guard let connection = connection else {
-            completion(.failure(DataStoreError.nilSQLiteConnection()))
-            return
+            return .failure(DataStoreError.nilSQLiteConnection())
         }
         do {
             let statement = SelectStatement(from: modelSchema,
@@ -332,9 +354,9 @@ final class SQLiteStorageEngineAdapter: StorageEngineAdapter {
                                                withSchema: modelSchema,
                                                using: statement,
                                                eagerLoad: eagerLoad)
-            completion(.success(result))
+            return .success(result)
         } catch {
-            completion(.failure(causedBy: error))
+            return .failure(causedBy: error)
         }
     }
 
@@ -563,3 +585,4 @@ extension SQLiteStorageEngineAdapter: DefaultLogger {
         Self.log
     }
 }
+// swiftlint:enable type_body_length file_length

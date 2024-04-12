@@ -38,9 +38,7 @@ class AWSAuthResendSignUpCodeTask: AuthResendSignUpCodeTask, DefaultLogger {
             return details
         } catch let error as AuthErrorConvertible {
             throw error.authError
-        } catch let error as AuthError {
-            throw error
-        } catch let error {
+        } catch {
             throw AuthError.unknown("Unable to execute auth task", error)
         }
     }
@@ -95,12 +93,5 @@ class AWSAuthResendSignUpCodeTask: AuthResendSignUpCodeTask, DefaultLogger {
 
         return deliveryDetails
     }
-    
-    public static var log: Logger {
-        Amplify.Logging.logger(forCategory: CategoryType.auth.displayName, forNamespace: String(describing: self))
-    }
-    
-    public var log: Logger {
-        Self.log
-    }
+
 }

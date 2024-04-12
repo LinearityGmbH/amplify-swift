@@ -12,11 +12,6 @@ import AWSS3
 struct AWSS3MultipartUploadRequestCompletedPart {
     let partNumber: Int
     let eTag: String
-
-    init(partNumber: Int, eTag: String) {
-        self.partNumber = partNumber
-        self.eTag = eTag
-    }
 }
 
 typealias AWSS3MultipartUploadRequestCompletedParts = [AWSS3MultipartUploadRequestCompletedPart]
@@ -33,10 +28,11 @@ extension AWSS3MultipartUploadRequestCompletedParts {
 
     init(parts: [S3ClientTypes.Part]) {
         self = parts.compactMap {
-            guard let eTag = $0.eTag else {
+            guard let eTag = $0.eTag,
+                  let partNumber = $0.partNumber else {
                 return nil
             }
-            return AWSS3MultipartUploadRequestCompletedPart(partNumber: $0.partNumber, eTag: eTag)
+            return AWSS3MultipartUploadRequestCompletedPart(partNumber: partNumber, eTag: eTag)
         }
     }
 

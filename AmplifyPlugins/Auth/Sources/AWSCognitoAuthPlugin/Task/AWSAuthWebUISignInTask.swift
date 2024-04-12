@@ -41,20 +41,11 @@ class AWSAuthWebUISignInTask: AuthWebUISignInTask, DefaultLogger {
             return result
         } catch let autherror as AuthErrorConvertible {
             throw autherror.authError
-        } catch let autherror as AuthError {
-            throw autherror
-        } catch let error {
-            let error = AuthError.unknown("Not able to signIn to the webUI", error)
-            throw error
+        } catch {
+            throw AuthError.unknown("Not able to signIn to the webUI", error)
+
         }
     }
-    
-    public static var log: Logger {
-        Amplify.Logging.logger(forCategory: CategoryType.auth.displayName, forNamespace: String(describing: self))
-    }
-    
-    public var log: Logger {
-        Self.log
-    }
+
 }
 #endif

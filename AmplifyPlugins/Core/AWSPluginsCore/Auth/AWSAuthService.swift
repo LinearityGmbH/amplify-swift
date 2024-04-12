@@ -13,7 +13,7 @@ public class AWSAuthService: AWSAuthServiceBehavior {
 
     public init() {}
 
-    public func getCredentialsProvider() -> CredentialsProvider {
+    public func getCredentialsProvider() -> CredentialsProviding {
         return AmplifyAWSCredentialsProvider()
     }
 
@@ -69,7 +69,7 @@ public class AWSAuthService: AWSAuthServiceBehavior {
         }
         return .success(convertedDictionary)
     }
-    
+
     /// Retrieves the Cognito token from the AuthCognitoTokensProvider
     public func getUserPoolAccessToken() async throws -> String {
         let authSession = try await Amplify.Auth.fetchAuthSession()

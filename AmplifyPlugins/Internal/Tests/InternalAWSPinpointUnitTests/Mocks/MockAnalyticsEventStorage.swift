@@ -9,6 +9,7 @@
 
 class MockAnalyticsEventStorage: AnalyticsEventStorage {
     var deletedEvent: String = ""
+    var deleteEventCallCount = 0
     var deleteDirtyEventCallCount = 0
     var initializeStorageCallCount = 0
     var deleteOldestEventCallCount = 0
@@ -22,6 +23,8 @@ class MockAnalyticsEventStorage: AnalyticsEventStorage {
 
     func deleteEvent(eventId: String) throws {
         deletedEvent = eventId
+        deleteEventCallCount += 1
+        events.removeAll { $0.id == eventId }
     }
 
     func deleteDirtyEvents() throws {
@@ -71,5 +74,10 @@ class MockAnalyticsEventStorage: AnalyticsEventStorage {
 
     func checkDiskSize(limit: Byte) throws {
         checkDiskSizeCallCount += 1
+    }
+
+    var updateSessionCount = 0
+    func updateSession(_ session: PinpointSession) throws {
+        updateSessionCount += 1
     }
 }

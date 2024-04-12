@@ -34,6 +34,11 @@ protocol StorageEngineAdapter: AnyObject, ModelStorageBehavior, ModelStorageErro
 
     // MARK: - Synchronous APIs
 
+    func save<M: Model>(_ model: M,
+                        modelSchema: ModelSchema,
+                        condition: QueryPredicate?,
+                        eagerLoad: Bool) -> DataStoreResult<M>
+
     func exists(_ modelSchema: ModelSchema,
                 withIdentifier id: ModelIdentifierProtocol,
                 predicate: QueryPredicate?) throws -> Bool
@@ -71,7 +76,6 @@ extension StorageEngineAdapter {
                           completion: @escaping DataStoreCallback<[M]>) {
         delete(modelType, modelSchema: modelType.schema, filter: predicate, completion: completion)
     }
-
 
     func delete(untypedModelType modelType: Model.Type,
                 withIdentifier identifier: ModelIdentifierProtocol,

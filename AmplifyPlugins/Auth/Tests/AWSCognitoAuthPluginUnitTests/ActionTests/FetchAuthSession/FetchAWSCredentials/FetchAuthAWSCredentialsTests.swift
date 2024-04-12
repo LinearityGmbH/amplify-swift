@@ -30,7 +30,11 @@ class FetchAuthAWSCredentialsTests: XCTestCase {
                 expectation.fulfill()
             }
         }, environment: MockInvalidEnvironment())
-        await waitForExpectations(timeout: 0.1)
+
+        await fulfillment(
+            of: [expectation],
+            timeout: 0.1
+        )
     }
 
     func testInvalidIdentitySuccessfullResponse() async {
@@ -38,7 +42,7 @@ class FetchAuthAWSCredentialsTests: XCTestCase {
         let expectation = expectation(description: "fetchAWSCredentials")
         let identityProviderFactory: BasicAuthorizationEnvironment.CognitoIdentityFactory = {
             MockIdentity(mockGetCredentialsResponse: { _ in
-                return GetCredentialsForIdentityOutputResponse()
+                return GetCredentialsForIdentityOutput()
             })
         }
         let authorizationEnvironment = BasicAuthorizationEnvironment(
@@ -60,7 +64,10 @@ class FetchAuthAWSCredentialsTests: XCTestCase {
             }
         }, environment: authEnvironment)
 
-        await waitForExpectations(timeout: 0.1)
+        await fulfillment(
+            of: [expectation],
+            timeout: 0.1
+        )
     }
 
     func testInvalidAWSCredentialSuccessfulResponse() async {
@@ -68,7 +75,7 @@ class FetchAuthAWSCredentialsTests: XCTestCase {
         let expectation = expectation(description: "fetchAWSCredentials")
         let identityProviderFactory: BasicAuthorizationEnvironment.CognitoIdentityFactory = {
             MockIdentity(mockGetCredentialsResponse: { _ in
-                return GetCredentialsForIdentityOutputResponse(identityId: "identityId")
+                return GetCredentialsForIdentityOutput(identityId: "identityId")
             })
         }
         let authorizationEnvironment = BasicAuthorizationEnvironment(
@@ -93,7 +100,10 @@ class FetchAuthAWSCredentialsTests: XCTestCase {
             environment: authEnvironment
         )
 
-        await waitForExpectations(timeout: 0.1)
+        await fulfillment(
+            of: [expectation],
+            timeout: 0.1
+        )
     }
 
     func testValidSuccessfulResponse() async {
@@ -107,7 +117,7 @@ class FetchAuthAWSCredentialsTests: XCTestCase {
 
         let identityProviderFactory: BasicAuthorizationEnvironment.CognitoIdentityFactory = {
             MockIdentity(mockGetCredentialsResponse: { _ in
-                return GetCredentialsForIdentityOutputResponse(
+                return GetCredentialsForIdentityOutput(
                     credentials: CognitoIdentityClientTypes.Credentials(
                         accessKeyId: expectedAccessKey,
                         expiration: Date(),
@@ -134,7 +144,11 @@ class FetchAuthAWSCredentialsTests: XCTestCase {
             },
             environment: authEnvironment
         )
-        await waitForExpectations(timeout: 0.1)
+
+        await fulfillment(
+            of: [credentialValidExpectation],
+            timeout: 0.1
+        )
     }
 
     func testFailureResponse() async {
@@ -166,7 +180,11 @@ class FetchAuthAWSCredentialsTests: XCTestCase {
             },
             environment: authEnvironment
         )
-        await waitForExpectations(timeout: 0.1)
+
+        await fulfillment(
+            of: [expectation],
+            timeout: 0.1
+        )
     }
 
 }

@@ -67,27 +67,13 @@ class StorageRequestUtilsGetterTests: XCTestCase {
         XCTAssertEqual(result, expected)
     }
 
-    // MARK: GetServiceMetadata tests
-
-    func testGetServiceMetadataConstructsMetadataKeysWithS3Prefix() {
-        let metadata = ["key1": "value1", "key2": "value2"]
-        let results = StorageRequestUtils.getServiceMetadata(metadata)
-        XCTAssertNotNil(results)
-
-        for (key, value) in results! {
-            XCTAssertNotNil(key)
-            XCTAssertNotNil(value)
-            XCTAssertTrue(key.contains(StorageRequestUtils.metadataKeyPrefix))
-        }
-    }
-
     // MARK: GetSize tests
 
     func testGetSizeForFileUploadSourceReturnsSize() throws {
         let key = "testGetSizeForFileUploadSourceReturnsSize"
         let filePath = NSTemporaryDirectory() + key + ".tmp"
         let fileURL = URL(fileURLWithPath: filePath)
-        FileManager.default.createFile(atPath: filePath, contents: key.data(using: .utf8), attributes: nil)
+        FileManager.default.createFile(atPath: filePath, contents: Data(key.utf8), attributes: nil)
         let result = try StorageRequestUtils.getSize(fileURL)
         XCTAssertNotNil(result)
     }

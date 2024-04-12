@@ -34,7 +34,10 @@ class RefreshUserPoolTokensTests: XCTestCase {
         }, environment: MockInvalidEnvironment()
         )
 
-        await waitForExpectations(timeout: 0.1)
+        await fulfillment(
+            of: [expectation],
+            timeout: 0.1
+        )
     }
 
     func testInvalidSuccessfulResponse() async {
@@ -43,7 +46,7 @@ class RefreshUserPoolTokensTests: XCTestCase {
         let identityProviderFactory: BasicSRPAuthEnvironment.CognitoUserPoolFactory = {
             MockIdentityProvider(
                 mockInitiateAuthResponse: { _ in
-                    return InitiateAuthOutputResponse()
+                    return InitiateAuthOutput()
                 }
             )
         }
@@ -63,7 +66,10 @@ class RefreshUserPoolTokensTests: XCTestCase {
             userPoolFactory: identityProviderFactory)
         )
 
-        await waitForExpectations(timeout: 1)
+        await fulfillment(
+            of: [expectation],
+            timeout: 1
+        )
     }
 
     func testValidSuccessfulResponse() async {
@@ -72,7 +78,7 @@ class RefreshUserPoolTokensTests: XCTestCase {
         let identityProviderFactory: BasicSRPAuthEnvironment.CognitoUserPoolFactory = {
             MockIdentityProvider(
                 mockInitiateAuthResponse: { _ in
-                    return InitiateAuthOutputResponse(
+                    return InitiateAuthOutput(
                         authenticationResult: .init(
                             accessToken: "accessTokenNew",
                             expiresIn: 100,
@@ -93,7 +99,11 @@ class RefreshUserPoolTokensTests: XCTestCase {
         }, environment: Defaults.makeDefaultAuthEnvironment(
             userPoolFactory: identityProviderFactory)
         )
-        await waitForExpectations(timeout: 0.1)
+
+        await fulfillment(
+            of: [expectation],
+            timeout: 0.1
+        )
     }
 
     func testFailureResponse() async {
@@ -128,7 +138,10 @@ class RefreshUserPoolTokensTests: XCTestCase {
             }
         }, environment: environment)
 
-        await waitForExpectations(timeout: 0.1)
+        await fulfillment(
+            of: [expectation],
+            timeout: 0.1
+        )
     }
 
 }

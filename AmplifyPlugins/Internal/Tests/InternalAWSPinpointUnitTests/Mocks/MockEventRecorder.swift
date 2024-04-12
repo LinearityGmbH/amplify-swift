@@ -9,8 +9,10 @@
 import AWSPinpoint
 @_spi(InternalAWSPinpoint) @testable import InternalAWSPinpoint
 
-class MockEventRecorder: AnalyticsEventRecording {
-    var pinpointClient: PinpointClientProtocol = MockPinpointClient()
+actor MockEventRecorder: AnalyticsEventRecording {
+    nonisolated var pinpointClient: PinpointClientProtocol {
+        MockPinpointClient()
+    }
 
     var saveCount = 0
     var lastSavedEvent: PinpointEvent?
@@ -31,5 +33,10 @@ class MockEventRecorder: AnalyticsEventRecording {
     func submitAllEvents() async throws -> [PinpointEvent] {
         submitCount += 1
         return []
+    }
+
+    var updateSessionCount = 0
+    func update(_ session: InternalAWSPinpoint.PinpointSession) throws {
+        updateSessionCount += 1
     }
 }

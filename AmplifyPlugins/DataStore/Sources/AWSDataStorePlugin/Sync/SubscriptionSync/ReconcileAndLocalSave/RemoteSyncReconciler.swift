@@ -16,50 +16,58 @@ struct RemoteSyncReconciler {
         case create(RemoteModel)
         case update(RemoteModel)
         case delete(RemoteModel)
-    }
 
-    /// Filter the incoming `remoteModels` against the pending mutations.
-    /// If there is a matching pending mutation, drop the remote model.
-    ///
-    /// - Parameters:
-    ///   - remoteModels: models retrieved from the remote store
-    ///   - pendingMutations: pending mutations from the outbox
-    /// - Returns: remote models to be applied
-    static func filter(_ remoteModels: [RemoteModel],
-                       pendingMutations: [MutationEvent]) -> [RemoteModel] {
-        guard !pendingMutations.isEmpty else {
-            return remoteModels
+        var remoteModel: RemoteModel {
+            switch self {
+            case .create(let model), .update(let model), .delete(let model):
+                return model
+            }
         }
 
-        let pendingMutationModelIdsArr = pendingMutations.map { mutationEvent in
-            mutationEvent.modelId
-        }
-        let pendingMutationModelIds = Set(pendingMutationModelIdsArr)
-
-        return remoteModels.filter { remoteModel in
-            !pendingMutationModelIds.contains(remoteModel.model.identifier)
+        var mutationType: MutationEvent.MutationType {
+            switch self {
+            case .create: return .create
+            case .update: return .update
+            case .delete: return .delete
+            }
         }
     }
 
     /// Reconciles the incoming `remoteModels` against the local metadata to get the disposition
     ///
+    /// GroupBy the remoteModels by model identifier and apply only the latest version of the remoteModel
+    ///
     /// - Parameters:
     ///   - remoteModels: models retrieved from the remote store
     ///   - localMetadatas: metadata retrieved from the local store
     /// - Returns: disposition of models to apply locally
-    static func getDispositions(_ remoteModels: [RemoteModel],
-                                localMetadatas: [LocalMetadata]) -> [Disposition] {
-        guard !remoteModels.isEmpty else {
+    static func getDispositions(
+        _ remoteModels: [RemoteModel],
+        localMetadatas: [LocalMetadata]
+    ) -> [Disposition] {
+        let remoteModelsGroupByIdentifier = remoteModels.reduce([String: [RemoteModel]]()) {
+            $0.merging([
+                $1.model.identifier: ($0[$1.model.identifier] ?? []) + [$1]
+            ], uniquingKeysWith: { $1 })
+        }
+        
+        let optimizedRemoteModels = remoteModelsGroupByIdentifier.values.compactMap {
+            $0.sorted(by: { $0.syncMetadata.version > $1.syncMetadata.version }).first
+        }
+        
+        guard !optimizedRemoteModels.isEmpty else {
             return []
         }
-
+        
         guard !localMetadatas.isEmpty else {
-            return remoteModels.compactMap { getDisposition($0, localMetadata: nil) }
+            return optimizedRemoteModels.compactMap { getDisposition($0, localMetadata: nil) }
         }
-
-        let metadataBymodelId = localMetadatas.reduce(into: [:]) { $0[$1.modelId] = $1 }
-        let dispositions = remoteModels.compactMap { getDisposition($0, localMetadata: metadataBymodelId[$0.model.identifier]) }
-
+        
+        let metadataByModelId = localMetadatas.reduce(into: [:]) { $0[$1.modelId] = $1 }
+        let dispositions = optimizedRemoteModels.compactMap {
+            getDisposition($0, localMetadata: metadataByModelId[$0.model.identifier])
+        }
+        
         return dispositions
     }
 
@@ -84,7 +92,7 @@ struct RemoteSyncReconciler {
         guard remoteModel.syncMetadata.version > localMetadata.version else {
             return nil
         }
-        
+
         return remoteModel.syncMetadata.deleted ? .delete(remoteModel) : .update(remoteModel)
     }
 }

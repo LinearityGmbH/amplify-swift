@@ -7,21 +7,21 @@
 
 import Foundation
 
-extension MigrateSignInState {
+extension MigrateSignInState: CustomDebugDictionaryConvertible {
 
     var debugDictionary: [String: Any] {
 
-        var additionalMetadataDictionary: [String: Any] = [:]
+        let additionalMetadataDictionary: [String: Any]
 
         switch self {
 
         case .notStarted:
             additionalMetadataDictionary = [:]
-        case .signingIn(_):
+        case .signingIn:
             additionalMetadataDictionary = [:]
         case .signedIn(let signedInData):
             additionalMetadataDictionary = ["SignedInData": signedInData.debugDictionary]
-        case .error(_):
+        case .error:
             additionalMetadataDictionary = [:]
         }
         return [type: additionalMetadataDictionary]

@@ -10,9 +10,9 @@ import ClientRuntime
 @_spi(InternalAmplifyPluginExtension)
 public class UserAgentSuffixAppender: AWSPluginExtension {
     @_spi(InternalHttpEngineProxy)
-    public var target: HttpClientEngine? = nil
+    public var target: HTTPClient?
     public let suffix: String
-    private let userAgentHeader = "User-Agent"
+    private let userAgentKey = "User-Agent"
 
     public init(suffix: String) {
         self.suffix = suffix
@@ -20,18 +20,16 @@ public class UserAgentSuffixAppender: AWSPluginExtension {
 }
 
 @_spi(InternalHttpEngineProxy)
-extension UserAgentSuffixAppender: HttpClientEngine {
-    public func execute(request: SdkHttpRequest) async throws -> HttpResponse {
+extension UserAgentSuffixAppender: HTTPClient {
+    public func send(request: SdkHttpRequest) async throws -> HttpResponse {
         guard let target = target  else {
             throw ClientError.unknownError("HttpClientEngine is not set")
         }
-        var headers = request.headers
-        let currentUserAgent = headers.value(for: userAgentHeader) ?? ""
-        headers.update(
-            name: userAgentHeader,
-            value: "\(currentUserAgent) \(suffix)"
-        )
-        request.headers = headers
-        return try await target.execute(request: request)
+
+        let existingUserAgent = request.headers.value(for: userAgentKey) ?? ""
+        let userAgent = "\(existingUserAgent) \(suffix)"
+        let request = request.updatingUserAgent(with: userAgent)
+
+        return try await target.send(request: request)
     }
 }

@@ -46,9 +46,7 @@ class FetchMFAPreferenceTask: AuthFetchMFAPreferenceTask, DefaultLogger {
             return try await fetchMFAPreference(with: accessToken)
         } catch let error as AuthErrorConvertible {
             throw error.authError
-        } catch let error as AuthError {
-            throw error
-        } catch let error {
+        } catch {
             throw AuthError.unknown("Unable to execute auth task", error)
         }
     }
@@ -58,8 +56,8 @@ class FetchMFAPreferenceTask: AuthFetchMFAPreferenceTask, DefaultLogger {
         let input = GetUserInput(accessToken: accessToken)
         let result = try await userPoolService.getUser(input: input)
 
-        var enabledList: Set<MFAType>? = nil
-        var preferred: MFAType? = nil
+        var enabledList: Set<MFAType>?
+        var preferred: MFAType?
 
         for mfaValue in result.userMFASettingList ?? [] {
 

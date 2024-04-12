@@ -19,8 +19,8 @@ class ClientBehaviorResetPasswordTests: AWSCognitoAuthClientBehaviorTests {
     override func setUp() {
         super.setUp()
         mockIdentityProvider = MockIdentityProvider(
-            mockForgotPasswordOutputResponse: { _ in
-                ForgotPasswordOutputResponse(codeDeliveryDetails: .init())
+            mockForgotPasswordOutput: { _ in
+                ForgotPasswordOutput(codeDeliveryDetails: .init())
             }
         )
     }
@@ -64,8 +64,8 @@ class ClientBehaviorResetPasswordTests: AWSCognitoAuthClientBehaviorTests {
                                                                                              deliveryMedium: .email,
                                                                                              destination: "Amplify@amazon.com")
         mockIdentityProvider = MockIdentityProvider(
-            mockForgotPasswordOutputResponse: { _ in
-                ForgotPasswordOutputResponse(codeDeliveryDetails: codeDeliveryDetails)
+            mockForgotPasswordOutput: { _ in
+                ForgotPasswordOutput(codeDeliveryDetails: codeDeliveryDetails)
             }
         )
         _ = try await plugin.resetPassword(for: "user", options: nil)
@@ -82,8 +82,8 @@ class ClientBehaviorResetPasswordTests: AWSCognitoAuthClientBehaviorTests {
     func testResetPasswordWithNilCodeDeliveryDetails() async throws {
 
         mockIdentityProvider = MockIdentityProvider(
-            mockForgotPasswordOutputResponse: { _ in
-                ForgotPasswordOutputResponse(codeDeliveryDetails: nil)
+            mockForgotPasswordOutput: { _ in
+                ForgotPasswordOutput(codeDeliveryDetails: nil)
             }
         )
 
@@ -112,8 +112,8 @@ class ClientBehaviorResetPasswordTests: AWSCognitoAuthClientBehaviorTests {
                                                                                              deliveryMedium: .email,
                                                                                              destination: "Amplify@amazon.com")
         mockIdentityProvider = MockIdentityProvider(
-            mockForgotPasswordOutputResponse: { _ in
-                ForgotPasswordOutputResponse(codeDeliveryDetails: codeDeliveryDetails)
+            mockForgotPasswordOutput: { _ in
+                ForgotPasswordOutput(codeDeliveryDetails: codeDeliveryDetails)
             }
         )
 
@@ -140,8 +140,10 @@ class ClientBehaviorResetPasswordTests: AWSCognitoAuthClientBehaviorTests {
     func testResetPasswordWithCodeDeliveryFailureException() async throws {
 
         mockIdentityProvider = MockIdentityProvider(
-            mockForgotPasswordOutputResponse: { _ in
-                throw ForgotPasswordOutputError.codeDeliveryFailureException(CodeDeliveryFailureException(message: "Code delivery failure"))
+            mockForgotPasswordOutput: { _ in
+                throw AWSCognitoIdentityProvider.CodeDeliveryFailureException(
+                    message: "Code delivery failure"
+                )
             }
         )
         do {
@@ -170,11 +172,10 @@ class ClientBehaviorResetPasswordTests: AWSCognitoAuthClientBehaviorTests {
     func testResetPasswordWithInternalErrorException() async throws {
 
         mockIdentityProvider = MockIdentityProvider(
-            mockForgotPasswordOutputResponse: { _ in
-                throw SdkError.service(
-                    ForgotPasswordOutputError.internalErrorException(
-                        .init()),
-                    .init(body: .empty, statusCode: .accepted))
+            mockForgotPasswordOutput: { _ in
+                throw try await AWSCognitoIdentityProvider.InternalErrorException(
+                    httpResponse: .init(body: .empty, statusCode: .accepted)
+                )
             }
         )
         do {
@@ -199,8 +200,10 @@ class ClientBehaviorResetPasswordTests: AWSCognitoAuthClientBehaviorTests {
     ///
     func testResetPasswordWithInvalidEmailRoleAccessPolicyException() async throws {
         mockIdentityProvider = MockIdentityProvider(
-            mockForgotPasswordOutputResponse: { _ in
-                throw ForgotPasswordOutputError.invalidEmailRoleAccessPolicyException(InvalidEmailRoleAccessPolicyException(message: "invalid email role"))
+            mockForgotPasswordOutput: { _ in
+                throw AWSCognitoIdentityProvider.InvalidEmailRoleAccessPolicyException(
+                    message: "invalid email role"
+                )
             }
         )
         do {
@@ -229,8 +232,10 @@ class ClientBehaviorResetPasswordTests: AWSCognitoAuthClientBehaviorTests {
     ///
     func testResetPasswordWithInvalidLambdaResponseException() async throws {
         mockIdentityProvider = MockIdentityProvider(
-            mockForgotPasswordOutputResponse: { _ in
-                throw ForgotPasswordOutputError.invalidLambdaResponseException(InvalidLambdaResponseException(message: "Invalid lambda response"))
+            mockForgotPasswordOutput: { _ in
+                throw AWSCognitoIdentityProvider.InvalidLambdaResponseException(
+                    message: "Invalid lambda response"
+                )
             }
         )
         do {
@@ -261,8 +266,10 @@ class ClientBehaviorResetPasswordTests: AWSCognitoAuthClientBehaviorTests {
     func testResetPasswordWithInvalidParameterException() async throws {
 
         mockIdentityProvider = MockIdentityProvider(
-            mockForgotPasswordOutputResponse: { _ in
-                throw ForgotPasswordOutputError.invalidParameterException(InvalidParameterException(message: "invalid parameter"))
+            mockForgotPasswordOutput: { _ in
+                throw AWSCognitoIdentityProvider.InvalidParameterException(
+                    message: "invalid parameter"
+                )
             }
         )
         do {
@@ -291,8 +298,10 @@ class ClientBehaviorResetPasswordTests: AWSCognitoAuthClientBehaviorTests {
     ///
     func testResetPasswordWithInvalidSmsRoleAccessPolicyException() async throws {
         mockIdentityProvider = MockIdentityProvider(
-            mockForgotPasswordOutputResponse: { _ in
-                throw ForgotPasswordOutputError.invalidSmsRoleAccessPolicyException(InvalidSmsRoleAccessPolicyException(message: "invalid sms role"))
+            mockForgotPasswordOutput: { _ in
+                throw AWSCognitoIdentityProvider.InvalidSmsRoleAccessPolicyException(
+                    message: "invalid sms role"
+                )
             }
         )
         do {
@@ -321,8 +330,10 @@ class ClientBehaviorResetPasswordTests: AWSCognitoAuthClientBehaviorTests {
     ///
     func testResetPasswordWithInvalidSmsRoleTrustRelationshipException() async throws {
         mockIdentityProvider = MockIdentityProvider(
-            mockForgotPasswordOutputResponse: { _ in
-                throw ForgotPasswordOutputError.invalidSmsRoleTrustRelationshipException(InvalidSmsRoleTrustRelationshipException(message: "invalid sms role trust relationship"))
+            mockForgotPasswordOutput: { _ in
+                throw AWSCognitoIdentityProvider.InvalidSmsRoleTrustRelationshipException(
+                    message: "invalid sms role trust relationship"
+                )
             }
         )
         do {
@@ -353,8 +364,10 @@ class ClientBehaviorResetPasswordTests: AWSCognitoAuthClientBehaviorTests {
     func testResetPasswordWithLimitExceededException() async throws {
 
         mockIdentityProvider = MockIdentityProvider(
-            mockForgotPasswordOutputResponse: { _ in
-                throw ForgotPasswordOutputError.limitExceededException(LimitExceededException(message: "limit exceeded"))
+            mockForgotPasswordOutput: { _ in
+                throw AWSCognitoIdentityProvider.LimitExceededException(
+                    message: "limit exceeded"
+                )
             }
         )
         do {
@@ -385,8 +398,10 @@ class ClientBehaviorResetPasswordTests: AWSCognitoAuthClientBehaviorTests {
     func testResetPasswordWithNotAuthorizedException() async throws {
 
         mockIdentityProvider = MockIdentityProvider(
-            mockForgotPasswordOutputResponse: { _ in
-                throw ForgotPasswordOutputError.notAuthorizedException(NotAuthorizedException(message: "not authorized"))
+            mockForgotPasswordOutput: { _ in
+                throw AWSCognitoIdentityProvider.NotAuthorizedException(
+                    message: "not authorized"
+                )
             }
         )
         do {
@@ -413,8 +428,10 @@ class ClientBehaviorResetPasswordTests: AWSCognitoAuthClientBehaviorTests {
     func testResetPasswordWithResourceNotFoundException() async throws {
 
         mockIdentityProvider = MockIdentityProvider(
-            mockForgotPasswordOutputResponse: { _ in
-                throw ForgotPasswordOutputError.resourceNotFoundException(ResourceNotFoundException(message: "resource not found"))
+            mockForgotPasswordOutput: { _ in
+                throw AWSCognitoIdentityProvider.ResourceNotFoundException(
+                    message: "resource not found"
+                )
             }
         )
         do {
@@ -445,8 +462,10 @@ class ClientBehaviorResetPasswordTests: AWSCognitoAuthClientBehaviorTests {
     func testResetPasswordWithTooManyRequestsException() async throws {
 
         mockIdentityProvider = MockIdentityProvider(
-            mockForgotPasswordOutputResponse: { _ in
-                throw ForgotPasswordOutputError.tooManyRequestsException(TooManyRequestsException(message: "too many requests"))
+            mockForgotPasswordOutput: { _ in
+                throw AWSCognitoIdentityProvider.TooManyRequestsException(
+                    message: "too many requests"
+                )
             }
         )
         do {
@@ -477,8 +496,10 @@ class ClientBehaviorResetPasswordTests: AWSCognitoAuthClientBehaviorTests {
     func testResetPasswordWithUnexpectedLambdaException() async throws {
 
         mockIdentityProvider = MockIdentityProvider(
-            mockForgotPasswordOutputResponse: { _ in
-                throw ForgotPasswordOutputError.unexpectedLambdaException(UnexpectedLambdaException(message: "unexpected lambda"))
+            mockForgotPasswordOutput: { _ in
+                throw AWSCognitoIdentityProvider.UnexpectedLambdaException(
+                    message: "unexpected lambda"
+                )
             }
         )
         do {
@@ -509,8 +530,10 @@ class ClientBehaviorResetPasswordTests: AWSCognitoAuthClientBehaviorTests {
     func testResetPasswordWithUserLambdaValidationException() async throws {
 
         mockIdentityProvider = MockIdentityProvider(
-            mockForgotPasswordOutputResponse: { _ in
-                throw ForgotPasswordOutputError.userLambdaValidationException(UserLambdaValidationException(message: "user lambda validation exception"))
+            mockForgotPasswordOutput: { _ in
+                throw AWSCognitoIdentityProvider.UserLambdaValidationException(
+                    message: "user lambda validation exception"
+                )
             }
         )
         do {
@@ -542,7 +565,7 @@ class ClientBehaviorResetPasswordTests: AWSCognitoAuthClientBehaviorTests {
     func testResetPasswordWithUserNotConfirmedException() {
 
         mockIdentityProvider = MockIdentityProvider(
-            mockForgotPasswordOutputResponse: { _ in
+            mockForgotPasswordOutput: { _ in
                 throw ForgotPasswordOutputError.userNotConfirmedException(UserNotConfirmedException(message: "user not confirmed"))
             }
         )
@@ -567,7 +590,7 @@ class ClientBehaviorResetPasswordTests: AWSCognitoAuthClientBehaviorTests {
 
             }
         }
-        wait(for: [resultExpectation], timeout: networkTimeout)
+        await fulfillment(of: [resultExpectation], timeout: networkTimeout)
     }
     */
 
@@ -584,8 +607,10 @@ class ClientBehaviorResetPasswordTests: AWSCognitoAuthClientBehaviorTests {
     func testResetPasswordWithUserNotFoundException() async throws {
 
         mockIdentityProvider = MockIdentityProvider(
-            mockForgotPasswordOutputResponse: { _ in
-                throw ForgotPasswordOutputError.userNotFoundException(UserNotFoundException(message: "user not found"))
+            mockForgotPasswordOutput: { _ in
+                throw AWSCognitoIdentityProvider.UserNotFoundException(
+                    message: "user not found"
+                )
             }
         )
         do {

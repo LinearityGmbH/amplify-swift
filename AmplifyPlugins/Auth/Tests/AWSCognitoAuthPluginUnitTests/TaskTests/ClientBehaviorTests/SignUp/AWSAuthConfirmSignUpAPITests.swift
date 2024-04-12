@@ -11,6 +11,7 @@ import AWSCognitoIdentity
 @testable import AWSCognitoAuthPlugin
 import AWSCognitoIdentityProvider
 import ClientRuntime
+import AWSClientRuntime
 
 class AWSAuthConfirmSignUpAPITests: BasePluginTest {
 
@@ -23,7 +24,9 @@ class AWSAuthConfirmSignUpAPITests: BasePluginTest {
     func testSuccessfulSignUp() async throws {
 
         self.mockIdentityProvider = MockIdentityProvider(
-            mockConfirmSignUpResponse: { _ in
+            mockConfirmSignUpResponse: { request in
+                XCTAssertNil(request.clientMetadata)
+                XCTAssertNil(request.forceAliasCreation)
                 return .init()
             }
         )
@@ -46,11 +49,14 @@ class AWSAuthConfirmSignUpAPITests: BasePluginTest {
             mockConfirmSignUpResponse: { request in
                 XCTAssertNotNil(request.clientMetadata)
                 XCTAssertEqual(request.clientMetadata?["key"], "value")
+                XCTAssertEqual(request.forceAliasCreation, true)
                 return .init()
             }
         )
 
-        let pluginOptions = AWSAuthConfirmSignUpOptions(metadata: ["key": "value"])
+        let pluginOptions = AWSAuthConfirmSignUpOptions(
+            metadata: ["key": "value"],
+            forceAliasCreation: true)
         let options = AuthConfirmSignUpRequest.Options(pluginOptions: pluginOptions)
         let result = try await self.plugin.confirmSignUp(
             for: "jeffb",
@@ -114,18 +120,18 @@ class AWSAuthConfirmSignUpAPITests: BasePluginTest {
 
     func testSignUpServiceError() async {
 
-        let errorsToTest: [(confirmSignUpOutputError: ConfirmSignUpOutputError, cognitoError: AWSCognitoAuthError)] = [
-            (.aliasExistsException(.init()), .aliasExists),
-            (.codeMismatchException(.init()), .codeMismatch),
-            (.invalidLambdaResponseException(.init()), .lambda),
-            (.invalidParameterException(.init()), .invalidParameter),
-            (.resourceNotFoundException(.init()), .resourceNotFound),
-            (.tooManyRequestsException(.init()), .requestLimitExceeded),
-            (.unexpectedLambdaException(.init()), .lambda),
-            (.userLambdaValidationException(.init()), .lambda),
-            (.userNotFoundException(.init()), .userNotFound),
-            (.limitExceededException(.init()), .limitExceeded),
-            (.tooManyFailedAttemptsException(.init()), .requestLimitExceeded),
+        let errorsToTest: [(confirmSignUpOutputError: Error, cognitoError: AWSCognitoAuthError)] = [
+            (AWSCognitoIdentityProvider.AliasExistsException(), .aliasExists),
+            (AWSCognitoIdentityProvider.CodeMismatchException(), .codeMismatch),
+            (AWSCognitoIdentityProvider.InvalidLambdaResponseException(), .lambda),
+            (AWSCognitoIdentityProvider.InvalidParameterException(), .invalidParameter),
+            (AWSCognitoIdentityProvider.ResourceNotFoundException(), .resourceNotFound),
+            (AWSCognitoIdentityProvider.TooManyRequestsException(), .requestLimitExceeded),
+            (AWSCognitoIdentityProvider.UnexpectedLambdaException(), .lambda),
+            (AWSCognitoIdentityProvider.UserLambdaValidationException(), .lambda),
+            (AWSCognitoIdentityProvider.UserNotFoundException(), .userNotFound),
+            (AWSCognitoIdentityProvider.LimitExceededException(), .limitExceeded),
+            (AWSCognitoIdentityProvider.TooManyFailedAttemptsException(), .failedAttemptsLimitExceeded)
         ]
 
         for errorToTest in errorsToTest {
@@ -139,7 +145,7 @@ class AWSAuthConfirmSignUpAPITests: BasePluginTest {
 
         self.mockIdentityProvider = MockIdentityProvider(
             mockConfirmSignUpResponse: { _ in
-                throw ConfirmSignUpOutputError.notAuthorizedException(.init())
+                throw AWSCognitoIdentityProvider.NotAuthorizedException()
             }
         )
 
@@ -171,10 +177,9 @@ class AWSAuthConfirmSignUpAPITests: BasePluginTest {
 
         self.mockIdentityProvider = MockIdentityProvider(
             mockConfirmSignUpResponse: { _ in
-                throw SdkError.service(
-                    ConfirmSignUpOutputError.internalErrorException(
-                        .init()),
-                    .init(body: .empty, statusCode: .accepted))
+                throw try await AWSCognitoIdentityProvider.InternalErrorException(
+                    httpResponse: .init(body: .empty, statusCode: .accepted)
+                )
             }
         )
 
@@ -202,8 +207,12 @@ class AWSAuthConfirmSignUpAPITests: BasePluginTest {
 
         self.mockIdentityProvider = MockIdentityProvider(
             mockConfirmSignUpResponse: { _ in
-                throw ConfirmSignUpOutputError.unknown(
-                    .init(httpResponse: .init(body: .empty, statusCode: .accepted)))
+                throw AWSClientRuntime.UnknownAWSHTTPServiceError.init(
+                    httpResponse: .init(body: .empty, statusCode: .accepted),
+                    message: nil,
+                    requestID: nil,
+                    typeName: nil
+                )
             }
         )
 
@@ -228,7 +237,7 @@ class AWSAuthConfirmSignUpAPITests: BasePluginTest {
     }
 
     func validateConfirmSignUpServiceErrors(
-        confirmSignUpOutputError: ConfirmSignUpOutputError,
+        confirmSignUpOutputError: Error,
         expectedCognitoError: AWSCognitoAuthError) async {
             self.mockIdentityProvider = MockIdentityProvider(
                 mockConfirmSignUpResponse: { _ in

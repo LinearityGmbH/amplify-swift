@@ -19,7 +19,7 @@ public extension AWSAPIPlugin {
         queue.addOperation(operation)
         return operation
     }
-    
+
     func query<R: Decodable>(request: GraphQLRequest<R>) async throws -> GraphQLTask<R>.Success {
         let operation = AWSGraphQLOperation(request: request.toOperationRequest(operationType: .query),
                                             session: session,
@@ -41,7 +41,7 @@ public extension AWSAPIPlugin {
         queue.addOperation(operation)
         return operation
     }
-    
+
     func mutate<R: Decodable>(request: GraphQLRequest<R>) async throws -> GraphQLTask<R>.Success {
         let operation = AWSGraphQLOperation(request: request.toOperationRequest(operationType: .mutation),
                                             session: session,
@@ -61,7 +61,7 @@ public extension AWSAPIPlugin {
             let operation = AWSGraphQLSubscriptionOperation(
                 request: request.toOperationRequest(operationType: .subscription),
                 pluginConfig: pluginConfig,
-                subscriptionConnectionFactory: subscriptionConnectionFactory,
+                appSyncRealTimeClientFactory: appSyncRealTimeClientFactory,
                 authService: authService,
                 apiAuthProviderFactory: authProviderFactory,
                 inProcessListener: valueListener,
@@ -69,12 +69,12 @@ public extension AWSAPIPlugin {
             queue.addOperation(operation)
             return operation
     }
-    
+
     func subscribe<R>(request: GraphQLRequest<R>) -> AmplifyAsyncThrowingSequence<GraphQLSubscriptionEvent<R>> {
         let request = request.toOperationRequest(operationType: .subscription)
         let runner = AWSGraphQLSubscriptionTaskRunner(request: request,
                                                       pluginConfig: pluginConfig,
-                                                      subscriptionConnectionFactory: subscriptionConnectionFactory,
+                                                      appSyncClientFactory: appSyncRealTimeClientFactory,
                                                       authService: authService,
                                                       apiAuthProviderFactory: authProviderFactory)
         return runner.sequence

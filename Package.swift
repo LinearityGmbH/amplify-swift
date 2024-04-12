@@ -9,8 +9,7 @@ let platforms: [SupportedPlatform] = [
     .watchOS(.v9)
 ]
 let dependencies: [Package.Dependency] = [
-    .package(url: "https://github.com/LinearityGmbH/aws-sdk-swift.git", exact: "0.13.0"),
-    .package(url: "https://github.com/aws-amplify/aws-appsync-realtime-client-ios.git", from: "3.0.0"),
+    .package(url: "https://github.com/LinearityGmbH/aws-sdk-swift.git", revision: "3f12afae8cd827711dc7764c01c18b2f9fd12ed0"),
     .package(url: "https://github.com/stephencelis/SQLite.swift.git", exact: "0.13.2"),
     .package(url: "https://github.com/mattgallagher/CwlPreconditionTesting.git", from: "2.1.0"),
     .package(url: "https://github.com/aws-amplify/amplify-swift-utils-notifications.git", from: "1.1.0")
@@ -23,6 +22,9 @@ let amplifyTargets: [Target] = [
         exclude: [
             "Info.plist",
             "Categories/DataStore/Model/Temporal/README.md"
+        ],
+        resources: [
+            .copy("Resources/PrivacyInfo.xcprivacy")
         ]
     ),
     .target(
@@ -34,6 +36,9 @@ let amplifyTargets: [Target] = [
         path: "AmplifyPlugins/Core/AWSPluginsCore",
         exclude: [
             "Info.plist"
+        ],
+        resources: [
+            .copy("Resources/PrivacyInfo.xcprivacy")
         ]
     ),
     .target(
@@ -110,12 +115,15 @@ let apiTargets: [Target] = [
         name: "AWSAPIPlugin",
         dependencies: [
             .target(name: "Amplify"),
-            .target(name: "AWSPluginsCore"),
-            .product(name: "AppSyncRealTimeClient", package: "aws-appsync-realtime-client-ios")],
+            .target(name: "AWSPluginsCore")
+        ],
         path: "AmplifyPlugins/API/Sources/AWSAPIPlugin",
         exclude: [
             "Info.plist",
             "AWSAPIPlugin.md"
+        ],
+        resources: [
+            .copy("Resources/PrivacyInfo.xcprivacy")
         ]
     ),
     .testTarget(
@@ -157,7 +165,10 @@ let authTargets: [Target] = [
             .product(name: "AWSCognitoIdentityProvider", package: "aws-sdk-swift"),
             .product(name: "AWSCognitoIdentity", package: "aws-sdk-swift")
         ],
-        path: "AmplifyPlugins/Auth/Sources/AWSCognitoAuthPlugin"
+        path: "AmplifyPlugins/Auth/Sources/AWSCognitoAuthPlugin",
+        resources: [
+            .copy("Resources/PrivacyInfo.xcprivacy")
+        ]
     ),
     .target(
         name: "libtommathAmplify",
@@ -198,6 +209,9 @@ let dataStoreTargets: [Target] = [
         exclude: [
             "Info.plist",
             "Sync/MutationSync/OutgoingMutationQueue/SyncMutationToCloudOperation.mmd"
+        ],
+        resources: [
+            .copy("Resources/PrivacyInfo.xcprivacy")
         ]
     ),
     .testTarget(
@@ -224,6 +238,9 @@ let storageTargets: [Target] = [
         path: "AmplifyPlugins/Storage/Sources/AWSS3StoragePlugin",
         exclude: [
             "Resources/Info.plist"
+        ],
+        resources: [
+            .copy("Resources/PrivacyInfo.xcprivacy")
         ]
     ),
     .testTarget(
@@ -251,6 +268,9 @@ let geoTargets: [Target] = [
         path: "AmplifyPlugins/Geo/Sources/AWSLocationGeoPlugin",
         exclude: [
             "Resources/Info.plist"
+        ],
+        resources: [
+            .copy("Resources/PrivacyInfo.xcprivacy")
         ]
     ),
     .testTarget(
@@ -279,7 +299,10 @@ let internalPinpointTargets: [Target] = [
             .product(name: "AWSPinpoint", package: "aws-sdk-swift"),
             .product(name: "AmplifyUtilsNotifications", package: "amplify-swift-utils-notifications")
         ],
-        path: "AmplifyPlugins/Internal/Sources/InternalAWSPinpoint"
+        path: "AmplifyPlugins/Internal/Sources/InternalAWSPinpoint",
+        resources: [
+            .copy("Resources/PrivacyInfo.xcprivacy")
+        ]
     ),
     .testTarget(
         name: "InternalAWSPinpointUnitTests",
@@ -298,7 +321,10 @@ let analyticsTargets: [Target] = [
         dependencies: [
             .target(name: "InternalAWSPinpoint")
         ],
-        path: "AmplifyPlugins/Analytics/Sources/AWSPinpointAnalyticsPlugin"
+        path: "AmplifyPlugins/Analytics/Sources/AWSPinpointAnalyticsPlugin",
+        resources: [
+            .copy("Resources/PrivacyInfo.xcprivacy")
+        ]
     ),
     .testTarget(
         name: "AWSPinpointAnalyticsPluginUnitTests",
@@ -316,7 +342,10 @@ let pushNotificationsTargets: [Target] = [
         dependencies: [
             .target(name: "InternalAWSPinpoint")
         ],
-        path: "AmplifyPlugins/Notifications/Push/Sources/AWSPinpointPushNotificationsPlugin"
+        path: "AmplifyPlugins/Notifications/Push/Sources/AWSPinpointPushNotificationsPlugin",
+        resources: [
+            .copy("Resources/PrivacyInfo.xcprivacy")
+        ]
     ),
     .testTarget(
         name: "AWSPinpointPushNotificationsPluginUnitTests",
@@ -343,7 +372,10 @@ let predictionsTargets: [Target] = [
             .product(name: "AWSTranslate", package: "aws-sdk-swift")
         ],
         path: "AmplifyPlugins/Predictions/AWSPredictionsPlugin",
-        exclude: []
+        exclude: [],
+        resources: [
+            .copy("Resources/PrivacyInfo.xcprivacy")
+        ]
     ),
     .testTarget(
         name: "AWSPredictionsPluginUnitTests",
@@ -359,6 +391,9 @@ let predictionsTargets: [Target] = [
         path: "AmplifyPlugins/Predictions/CoreMLPredictionsPlugin",
         exclude: [
             "Resources/Info.plist"
+        ],
+        resources: [
+            .copy("Resources/PrivacyInfo.xcprivacy")
         ]
     ),
     .testTarget(
@@ -380,7 +415,10 @@ let loggingTargets: [Target] = [
             .target(name: "AWSPluginsCore"),
             .product(name: "AWSCloudWatchLogs", package: "aws-sdk-swift"),
         ],
-        path: "AmplifyPlugins/Logging/Sources/AWSCloudWatchLoggingPlugin"
+        path: "AmplifyPlugins/Logging/Sources/AWSCloudWatchLoggingPlugin",
+        resources: [
+            .copy("Resources/PrivacyInfo.xcprivacy")
+        ]
     ),
     .testTarget(
         name: "AWSCloudWatchLoggingPluginTests",
