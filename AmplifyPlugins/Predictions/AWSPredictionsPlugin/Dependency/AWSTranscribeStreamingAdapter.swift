@@ -22,10 +22,10 @@ class AWSTranscribeStreamingAdapter: AWSTranscribeStreamingBehavior {
         let mediaSampleRateHertz: Int
     }
 
-    let credentialsProvider: CredentialsProvider
+    let credentialsProvider: CredentialsProviding
     let region: String
 
-    init(credentialsProvider: CredentialsProvider, region: String) {
+    init(credentialsProvider: CredentialsProviding, region: String) {
         self.credentialsProvider = credentialsProvider
         self.region = region
     }
@@ -112,7 +112,6 @@ class AWSTranscribeStreamingAdapter: AWSTranscribeStreamingBehavior {
             )
             webSocket.send(message: .data(endFrame), onError: { _ in })
         }
-
 
         let stream = AsyncThrowingStream<TranscribeStreamingClientTypes.TranscriptEvent, Error> { continuation in
             Task {

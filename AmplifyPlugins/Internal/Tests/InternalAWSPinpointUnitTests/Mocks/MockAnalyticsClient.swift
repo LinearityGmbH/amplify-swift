@@ -73,10 +73,10 @@ actor MockAnalyticsClient: AnalyticsClientBehaviour {
 
     }
 
-    private var recordExpectation: AsyncExpectation?
-    func setRecordExpectation(_ expectation: AsyncExpectation, count: Int = 1) async {
+    private var recordExpectation: XCTestExpectation?
+    func setRecordExpectation(_ expectation: XCTestExpectation, count: Int = 1) {
         recordExpectation = expectation
-        await recordExpectation?.setExpectedFulfillmentCount(count)
+        recordExpectation?.expectedFulfillmentCount = count
     }
 
     var recordCount = 0
@@ -86,24 +86,25 @@ actor MockAnalyticsClient: AnalyticsClientBehaviour {
         recordCount += 1
         lastRecordedEvent = event
         recordedEvents.append(event)
-        Task {
-            await recordExpectation?.fulfill()
-        }
+        recordExpectation?.fulfill()
     }
 
-    private var submitEventsExpectation: AsyncExpectation?
-    func setSubmitEventsExpectation(_ expectation: AsyncExpectation, count: Int = 1) async {
+    private var submitEventsExpectation: XCTestExpectation?
+    func setSubmitEventsExpectation(_ expectation: XCTestExpectation, count: Int = 1) {
         submitEventsExpectation = expectation
-        await submitEventsExpectation?.setExpectedFulfillmentCount(count)
+        submitEventsExpectation?.expectedFulfillmentCount = count
     }
 
     var submitEventsCount = 0
     func submitEvents() async throws -> [PinpointEvent] {
         submitEventsCount += 1
-        Task {
-            await submitEventsExpectation?.fulfill()
-        }
+        submitEventsExpectation?.fulfill()
         return []
+    }
+
+    var updateSessionCount = 0
+    func update(_ session: InternalAWSPinpoint.PinpointSession) async throws {
+        updateSessionCount += 1
     }
 
     func resetCounters() {

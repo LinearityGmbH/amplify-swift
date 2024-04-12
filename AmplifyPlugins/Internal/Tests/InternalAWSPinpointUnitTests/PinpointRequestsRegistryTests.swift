@@ -34,13 +34,13 @@ class PinpointRequestsRegistryTests: XCTestCase {
         await PinpointRequestsRegistry.shared.registerSource(.analytics, for: .recordEvent)
         await PinpointRequestsRegistry.shared.registerSource(.pushNotifications, for: .recordEvent)
         let sdkRequest = try createSdkRequest(for: .recordEvent)
-        _ = try await httpClientEngine.execute(request: sdkRequest)
+        _ = try await httpClientEngine.send(request: sdkRequest)
+        let executedRequest = mockedHttpSdkClient.request
 
         XCTAssertEqual(mockedHttpSdkClient.executeCount, 1)
-        guard let userAgent = sdkRequest.headers.value(for: "User-Agent") else {
-            XCTFail("Expected User-Agent")
-            return
-        }
+        let userAgent = try XCTUnwrap(
+            executedRequest?.headers.value(for: "User-Agent")
+        )
         XCTAssertTrue(userAgent.contains(AWSPinpointSource.analytics.rawValue))
         XCTAssertTrue(userAgent.contains(AWSPinpointSource.pushNotifications.rawValue))
     }
@@ -53,75 +53,50 @@ class PinpointRequestsRegistryTests: XCTestCase {
         let sdkRequest = try createSdkRequest(for: nil)
         let oldUserAgent = sdkRequest.headers.value(for: "User-Agent")
 
-        _ = try await httpClientEngine.execute(request: sdkRequest)
+        _ = try await httpClientEngine.send(request: sdkRequest)
+        let executedRequest = mockedHttpSdkClient.request
 
         XCTAssertEqual(mockedHttpSdkClient.executeCount, 1)
-        guard let newUserAgent = sdkRequest.headers.value(for: "User-Agent") else {
-            XCTFail("Expected User-Agent")
-            return
-        }
+        let newUserAgent = try XCTUnwrap(
+            executedRequest?.headers.value(for: "User-Agent")
+        )
 
         XCTAssertEqual(newUserAgent, oldUserAgent)
         XCTAssertFalse(newUserAgent.contains(AWSPinpointSource.analytics.rawValue))
         XCTAssertFalse(newUserAgent.contains(AWSPinpointSource.pushNotifications.rawValue))
     }
 
-    private var httpClientEngine: HttpClientEngine {
+    private var httpClientEngine: HTTPClient {
         pinpointConfiguration.httpClientEngine
     }
 
     private func createSdkRequest(for api: PinpointRequestsRegistry.API?) throws -> SdkHttpRequest {
         let apiPath = api?.rawValue ?? "otherApi"
-        let endpoint = try Endpoint(urlString: "https://host:42/path/\(apiPath)/suffix")
-        let headers = [
-            "User-Agent": "mocked_user_agent"
-        ]
-        return SdkHttpRequest(method: .put,
-                              endpoint: endpoint,
-                              headers: .init(headers))
+        let endpoint = try Endpoint(
+            urlString: "https://host:42/path/\(apiPath)/suffix",
+            headers: .init(["User-Agent": "mocked_user_agent"])
+        )
+        return SdkHttpRequest(
+            method: .put,
+            endpoint: endpoint
+        )
     }
 }
 
-private extension HttpClientEngine {
+private extension HTTPClient {
     var typeString: String {
         String(describing: type(of: self))
     }
 }
 
-private class MockSDKRuntimeConfiguration: SDKRuntimeConfiguration {
-    var encoder: ClientRuntime.RequestEncoder?
-    var decoder: ClientRuntime.ResponseDecoder?
-    var httpClientConfiguration: ClientRuntime.HttpClientConfiguration
-    var idempotencyTokenGenerator: ClientRuntime.IdempotencyTokenGenerator
-    var clientLogMode: ClientRuntime.ClientLogMode
-    var partitionID: String?
-    
-    let logger: LogAgent
-    let retryer: SDKRetryer
-    var endpoint: String? = nil
-    private let mockedHttpClientEngine : HttpClientEngine
-
-    init(httpClientEngine: HttpClientEngine) throws {
-        let defaultSDKRuntimeConfig = try DefaultSDKRuntimeConfiguration("MockSDKRuntimeConfiguration")
-        httpClientConfiguration = defaultSDKRuntimeConfig.httpClientConfiguration
-        idempotencyTokenGenerator = defaultSDKRuntimeConfig.idempotencyTokenGenerator
-        clientLogMode = defaultSDKRuntimeConfig.clientLogMode
-        
-        logger = MockLogAgent()
-        retryer = try SDKRetryer(options: RetryOptions(jitterMode: .default))
-        mockedHttpClientEngine = httpClientEngine
-    }
-
-    var httpClientEngine: HttpClientEngine {
-        mockedHttpClientEngine
-    }
-}
-
-private class MockHttpClientEngine: HttpClientEngine {
+private class MockHttpClientEngine: HTTPClient {
     var executeCount = 0
-    func execute(request: SdkHttpRequest) async throws -> HttpResponse {
+    var request: SdkHttpRequest?
+
+    func send(request: SdkHttpRequest) async throws -> HttpResponse {
         executeCount += 1
-        return .init(body: .none, statusCode: .accepted)
+        self.request = request
+        return .init(body: .empty, statusCode: .accepted)
     }
 
     func close() async {}

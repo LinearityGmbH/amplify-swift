@@ -11,13 +11,13 @@ import AWSClientRuntime
 
 public protocol AWSAuthServiceBehavior: AnyObject {
 
-    func getCredentialsProvider() -> CredentialsProvider
+    func getCredentialsProvider() -> CredentialsProviding
 
     func getTokenClaims(tokenString: String) -> Result<[String: AnyObject], AuthError>
 
     /// Retrieves the identity identifier of for the Auth service
     func getIdentityID() async throws -> String
-    
+
     /// Retrieves the token from the Auth token provider
     func getUserPoolAccessToken() async throws -> String
 }

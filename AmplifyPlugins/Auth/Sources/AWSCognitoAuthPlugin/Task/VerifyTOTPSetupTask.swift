@@ -41,14 +41,12 @@ class VerifyTOTPSetupTask: AuthVerifyTOTPSetupTask, DefaultLogger {
                 with: accessToken, userCode: request.code)
         } catch let error as AuthErrorConvertible {
             throw error.authError
-        } catch let error as AuthError {
-            throw error
-        } catch let error {
+        } catch {
             throw AuthError.unknown("Unable to execute auth task", error)
         }
     }
 
-    func verifyTOTPSetup(with accessToken: String, userCode: String) async throws  {
+    func verifyTOTPSetup(with accessToken: String, userCode: String) async throws {
         let userPoolService = try userPoolFactory()
         let friendlyDeviceName = (request.options.pluginOptions as? VerifyTOTPSetupOptions)?.friendlyDeviceName
         let input = VerifySoftwareTokenInput(

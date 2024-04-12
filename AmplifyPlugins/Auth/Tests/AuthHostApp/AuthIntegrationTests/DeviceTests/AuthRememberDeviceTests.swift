@@ -38,14 +38,12 @@ class AuthRememberDeviceTests: AWSAuthBaseTest {
         let username = "integTest\(UUID().uuidString)"
         let password = "P123@\(UUID().uuidString)"
 
-        let signInExpectation = asyncExpectation(description: "SignIn event should be fired")
+        let signInExpectation = expectation(description: "SignIn event should be fired")
 
         unsubscribeToken = Amplify.Hub.listen(to: .auth) { payload in
             switch payload.eventName {
             case HubPayload.EventName.Auth.signedIn:
-                Task {
-                    await signInExpectation.fulfill()
-                }
+                signInExpectation.fulfill()
             default:
                 break
             }
@@ -55,12 +53,22 @@ class AuthRememberDeviceTests: AWSAuthBaseTest {
             username: username,
             password: password,
             email: defaultTestEmail)
-        await waitForExpectations([signInExpectation], timeout: networkTimeout)
+        await fulfillment(of: [signInExpectation], timeout: networkTimeout)
 
         _ = try await Amplify.Auth.rememberDevice()
 
         let devices = try await Amplify.Auth.fetchDevices()
         XCTAssertNotNil(devices)
         XCTAssertGreaterThan(devices.count, 0)
+        XCTAssertEqual(devices.first?.name.isEmpty, false)
+        XCTAssertEqual(devices.first?.id.isEmpty, false)
+        guard let awsDevice = devices.first as? AWSAuthDevice else {
+            XCTFail("Should be able to cast to AWSAuthDevice")
+            return
+        }
+        XCTAssertEqual(awsDevice.attributes.isEmpty, false)
+        XCTAssertNotNil(awsDevice.createdDate)
+        XCTAssertNotNil(awsDevice.lastAuthenticatedDate)
+        XCTAssertNotNil(awsDevice.lastModifiedDate)
     }
 }

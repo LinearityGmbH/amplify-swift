@@ -187,7 +187,7 @@ final class AWSDataStoreLazyLoadBlogPostComment8V2Tests: AWSDataStoreLazyLoadBas
         try await startAndWaitForReady()
         let post = Post(name: "name", randomId: "randomId")
         let comment = Comment(content: "content", post: post)
-        let mutationEventReceived = asyncExpectation(description: "Received mutation event")
+        let mutationEventReceived = expectation(description: "Received mutation event")
         let mutationEvents = Amplify.DataStore.observe(Post.self)
         Task {
             for try await mutationEvent in mutationEvents {
@@ -209,7 +209,7 @@ final class AWSDataStoreLazyLoadBlogPostComment8V2Tests: AWSDataStoreLazyLoadBas
                     }
                     XCTAssertEqual(comments.count, 1)
                     
-                    await mutationEventReceived.fulfill()
+                    mutationEventReceived.fulfill()
                 }
             }
         }
@@ -221,7 +221,7 @@ final class AWSDataStoreLazyLoadBlogPostComment8V2Tests: AWSDataStoreLazyLoadBas
             XCTFail("Failed to send mutation request \(error)")
         }
         
-        await waitForExpectations([mutationEventReceived], timeout: 60)
+        await fulfillment(of: [mutationEventReceived], timeout: 60)
         mutationEvents.cancel()
     }
     
@@ -231,7 +231,7 @@ final class AWSDataStoreLazyLoadBlogPostComment8V2Tests: AWSDataStoreLazyLoadBas
         let post = Post(name: "name", randomId: "randomId")
         let savedPost = try await createAndWaitForSync(post)
         let comment = Comment(content: "content", post: post)
-        let mutationEventReceived = asyncExpectation(description: "Received mutation event")
+        let mutationEventReceived = expectation(description: "Received mutation event")
         let mutationEvents = Amplify.DataStore.observe(Comment.self)
         Task {
             for try await mutationEvent in mutationEvents {
@@ -240,7 +240,7 @@ final class AWSDataStoreLazyLoadBlogPostComment8V2Tests: AWSDataStoreLazyLoadBas
                    let receivedComment = try? mutationEvent.decodeModel(as: Comment.self),
                    receivedComment.id == comment.id {
                     try await assertComment(receivedComment, canLazyLoad: savedPost)
-                    await mutationEventReceived.fulfill()
+                    mutationEventReceived.fulfill()
                 }
             }
         }
@@ -252,7 +252,7 @@ final class AWSDataStoreLazyLoadBlogPostComment8V2Tests: AWSDataStoreLazyLoadBas
             XCTFail("Failed to send mutation request \(error)")
         }
         
-        await waitForExpectations([mutationEventReceived], timeout: 60)
+        await fulfillment(of: [mutationEventReceived], timeout: 60)
         mutationEvents.cancel()
     }
     
@@ -261,7 +261,7 @@ final class AWSDataStoreLazyLoadBlogPostComment8V2Tests: AWSDataStoreLazyLoadBas
         try await startAndWaitForReady()
         let post = Post(name: "name", randomId: "randomId")
         let comment = Comment(content: "content", post: post)
-        let snapshotReceived = asyncExpectation(description: "Received query snapshot")
+        let snapshotReceived = expectation(description: "Received query snapshot")
         let querySnapshots = Amplify.DataStore.observeQuery(for: Post.self, where: Post.keys.id == post.id)
         Task {
             for try await querySnapshot in querySnapshots {
@@ -278,7 +278,7 @@ final class AWSDataStoreLazyLoadBlogPostComment8V2Tests: AWSDataStoreLazyLoadBas
                     }
                     XCTAssertEqual(comments.count, 1)
                     
-                    await snapshotReceived.fulfill()
+                    snapshotReceived.fulfill()
                 }
             }
         }
@@ -290,7 +290,7 @@ final class AWSDataStoreLazyLoadBlogPostComment8V2Tests: AWSDataStoreLazyLoadBas
             XCTFail("Failed to send mutation request \(error)")
         }
         
-        await waitForExpectations([snapshotReceived], timeout: 60)
+        await fulfillment(of: [snapshotReceived], timeout: 60)
         querySnapshots.cancel()
     }
     
@@ -301,13 +301,13 @@ final class AWSDataStoreLazyLoadBlogPostComment8V2Tests: AWSDataStoreLazyLoadBas
         let post = Post(name: "name", randomId: "randomId")
         let savedPost = try await createAndWaitForSync(post)
         let comment = Comment(content: "content", post: post)
-        let snapshotReceived = asyncExpectation(description: "Received query snapshot")
+        let snapshotReceived = expectation(description: "Received query snapshot")
         let querySnapshots = Amplify.DataStore.observeQuery(for: Comment.self, where: Comment.keys.id == comment.id)
         Task {
             for try await querySnapshot in querySnapshots {
                 if let receivedComment = querySnapshot.items.first {
                     try await assertComment(receivedComment, canLazyLoad: savedPost)
-                    await snapshotReceived.fulfill()
+                    snapshotReceived.fulfill()
                 }
             }
         }
@@ -319,8 +319,64 @@ final class AWSDataStoreLazyLoadBlogPostComment8V2Tests: AWSDataStoreLazyLoadBas
             XCTFail("Failed to send mutation request \(error)")
         }
         
-        await waitForExpectations([snapshotReceived], timeout: 60)
+        await fulfillment(of: [snapshotReceived], timeout: 60)
         querySnapshots.cancel()
+    }
+
+    /// Test retrieving and loading of a Post from a deleted comment in DataStore.observe
+    ///
+    /// - Given:  A configured DataStore and API plugin, with Post and Comment model, which have been
+    ///     created and synced.
+    /// - When:
+    ///    - Call mutate API to delete an existing comment on a post
+    /// - Then:
+    ///    - The operation completes successfully with no errors
+    ///    - The observe query should be fired with the relevant mutation event
+    ///    - The model should be decoded from the mutation event
+    ///    - Lazy reference of the post should retrievable and loadable.
+    ///
+    func testObserveToQueryPostFromDeletedComment() async throws {
+        await setup(withModels: BlogPostComment8V2Models())
+        try await startAndWaitForReady()
+        let post = Post(name: "name", randomId: "randomId")
+        _ = try await createAndWaitForSync(post)
+        let comment = Comment(content: "content", post: post)
+        let receivedComment = try await createAndWaitForSync(comment)
+        let mutationEventReceived = expectation(description: "Received mutation event")
+        let mutationEvents = Amplify.DataStore.observe(Comment.self)
+        Task {
+            for try await mutationEvent in mutationEvents {
+                if let receivedComment = try? mutationEvent.decodeModel(as: Comment.self),
+                   receivedComment.id == receivedComment.id {
+                    assertLazyReference(receivedComment._post,
+                                        state: .notLoaded(identifiers: [.init(name: "id", value: post.identifier)]))
+                    guard let loadedPost = try await comment.post else {
+                        XCTFail("Failed to load the post from the comment")
+                        return
+                    }
+                    XCTAssertEqual(loadedPost.id, post.id)
+                    assertLazyReference(comment._post,
+                                        state: .loaded(model: post))
+                    mutationEventReceived.fulfill()
+                } else {
+                    XCTFail("The model should be correctly decoded")
+                }
+            }
+        }
+
+        let deleteRequest = GraphQLRequest<MutationSyncResult>.deleteMutation(
+            of: comment,
+            modelSchema: Comment.schema,
+            version: 1)
+        do {
+            let result = try await Amplify.API.mutate(request: deleteRequest)
+            print(result)
+        } catch {
+            XCTFail("Failed to send mutation request \(error)")
+        }
+
+        await fulfillment(of: [mutationEventReceived], timeout: 60)
+        mutationEvents.cancel()
     }
 }
 

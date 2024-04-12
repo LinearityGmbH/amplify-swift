@@ -31,12 +31,14 @@ class UserAgentSuffixAppenderTests: XCTestCase {
     /// Then: The user agent suffix is appended
     func testExecute_withExistingUserAgentHeader_shouldAppendSuffix() async throws {
         let request = createRequest()
-        request.headers.add(name: userAgentKey, value: "existingUserAgent")
+        request.withHeader(name: userAgentKey, value: "existingUserAgent")
 
-        _ = try await appender.execute(request: request)
+        _ = try await appender.send(request: request)
         XCTAssertEqual(httpClientEngine.executeCount, 1)
         XCTAssertNotNil(httpClientEngine.executeRequest)
-        let userAgent = try XCTUnwrap(request.headers.value(for: userAgentKey))
+        let userAgent = try XCTUnwrap(
+            httpClientEngine.executeRequest?.headers.value(for: userAgentKey)
+        )
         XCTAssertTrue(userAgent.hasSuffix(customSuffix))
     }
 
@@ -46,10 +48,12 @@ class UserAgentSuffixAppenderTests: XCTestCase {
     func testExecute_withoutExistingUserAgentHeader_shouldCreateHeader() async throws {
         let request = createRequest()
 
-        _ = try await appender.execute(request: request)
+        _ = try await appender.send(request: request)
         XCTAssertEqual(httpClientEngine.executeCount, 1)
         XCTAssertNotNil(httpClientEngine.executeRequest)
-        let userAgent = try XCTUnwrap(request.headers.value(for: userAgentKey))
+        let userAgent = try XCTUnwrap(
+            httpClientEngine.executeRequest?.headers.value(for: userAgentKey)
+        )
         XCTAssertTrue(userAgent.hasSuffix(customSuffix))
     }
 
@@ -59,7 +63,7 @@ class UserAgentSuffixAppenderTests: XCTestCase {
     func testExecute_withoutHttpClientEngine_shouldThrowError() async {
         appender = UserAgentSuffixAppender(suffix: customSuffix)
         do {
-            _ = try await appender.execute(request: createRequest())
+            _ = try await appender.send(request: createRequest())
             XCTFail("Should not succeed")
         } catch {
             guard case ClientError.unknownError(_) = error else {
@@ -72,16 +76,15 @@ class UserAgentSuffixAppenderTests: XCTestCase {
     private func createRequest() -> SdkHttpRequest {
         return SdkHttpRequest(
             method: .get,
-            endpoint: .init(host: "customHost"),
-            headers: .init()
+            endpoint: .init(host: "customHost")
         )
     }
 }
 
-private class MockHttpClientEngine: HttpClientEngine {
+private class MockHttpClientEngine: HTTPClient {
     var executeCount = 0
     var executeRequest: SdkHttpRequest?
-    func execute(request: SdkHttpRequest) async throws -> HttpResponse {
+    func send(request: SdkHttpRequest) async throws -> HttpResponse {
         executeCount += 1
         executeRequest = request
         return .init(body: .empty, statusCode: .accepted)

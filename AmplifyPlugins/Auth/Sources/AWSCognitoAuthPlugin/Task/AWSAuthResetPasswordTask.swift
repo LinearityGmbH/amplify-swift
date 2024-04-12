@@ -38,9 +38,7 @@ class AWSAuthResetPasswordTask: AuthResetPasswordTask, DefaultLogger {
             return result
         } catch let error as AuthErrorConvertible {
             throw error.authError
-        } catch let error as AuthError {
-            throw error
-        } catch let error {
+        } catch {
             throw AuthError.unknown("Unable to execute auth task", error)
         }
     }
@@ -95,13 +93,5 @@ class AWSAuthResetPasswordTask: AuthResetPasswordTask, DefaultLogger {
         let nextStep = AuthResetPasswordStep.confirmResetPasswordWithCode(deliveryDetails, [:])
         let authResetPasswordResult = AuthResetPasswordResult(isPasswordReset: false, nextStep: nextStep)
         return authResetPasswordResult
-    }
-    
-    public static var log: Logger {
-        Amplify.Logging.logger(forCategory: CategoryType.auth.displayName, forNamespace: String(describing: self))
-    }
-    
-    public var log: Logger {
-        Self.log
     }
 }

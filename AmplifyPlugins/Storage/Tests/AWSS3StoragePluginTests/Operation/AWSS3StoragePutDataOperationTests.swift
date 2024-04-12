@@ -84,7 +84,6 @@ class AWSS3StorageUploadDataOperationTests: AWSS3StorageOperationTestBase {
 
         let expectedUploadSource = UploadSource.data(testData)
         let metadata = ["mykey": "Value"]
-        let expectedMetadata = ["x-amz-meta-mykey": "Value"]
 
         let options = StorageUploadDataRequest.Options(accessLevel: .protected,
                                                 metadata: metadata,
@@ -119,7 +118,7 @@ class AWSS3StorageUploadDataOperationTests: AWSS3StorageOperationTestBase {
                                         key: testKey,
                                         uploadSource: expectedUploadSource,
                                         contentType: testContentType,
-                                        metadata: expectedMetadata)
+                                        metadata: metadata)
     }
 
     func testUploadDataOperationUploadFail() {
@@ -178,12 +177,11 @@ class AWSS3StorageUploadDataOperationTests: AWSS3StorageOperationTestBase {
         for _ in 1 ... 20 {
             testLargeDataString += testLargeDataString
         }
-        let testLargeData = testLargeDataString.data(using: .utf8)!
+        let testLargeData = Data(testLargeDataString.utf8)
         XCTAssertTrue(testLargeData.count > StorageUploadDataRequest.Options.multiPartUploadSizeThreshold,
                       "Could not create data object greater than MultiPartUploadSizeThreshold")
         let expectedUploadSource = UploadSource.data(testLargeData)
         let metadata = ["mykey": "Value"]
-        let expectedMetadata = ["x-amz-meta-mykey": "Value"]
 
         let options = StorageUploadDataRequest.Options(accessLevel: .protected,
                                                 metadata: metadata,
@@ -218,7 +216,7 @@ class AWSS3StorageUploadDataOperationTests: AWSS3StorageOperationTestBase {
                                                  key: testKey,
                                                  uploadSource: expectedUploadSource,
                                                  contentType: testContentType,
-                                                 metadata: expectedMetadata)
+                                                 metadata: metadata)
     }
 
     // TODO: test pause, resume, canel, etc.

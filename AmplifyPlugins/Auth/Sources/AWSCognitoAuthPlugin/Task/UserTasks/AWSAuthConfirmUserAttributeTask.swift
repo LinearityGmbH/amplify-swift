@@ -11,7 +11,7 @@ import AWSPluginsCore
 import ClientRuntime
 import AWSCognitoIdentityProvider
 
-class AWSAuthConfirmUserAttributeTask: AuthConfirmUserAttributeTask {
+class AWSAuthConfirmUserAttributeTask: AuthConfirmUserAttributeTask, DefaultLogger {
     typealias CognitoUserPoolFactory = () throws -> CognitoUserPoolBehavior
 
     private let request: AuthConfirmUserAttributeRequest
@@ -37,9 +37,7 @@ class AWSAuthConfirmUserAttributeTask: AuthConfirmUserAttributeTask {
             try await confirmUserAttribute(with: accessToken)
         } catch let error as AuthErrorConvertible {
             throw error.authError
-        } catch let error as AuthError {
-            throw error
-        } catch let error {
+        } catch {
             throw AuthError.unknown("Unable to execute auth task", error)
         }
     }

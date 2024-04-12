@@ -10,11 +10,11 @@ import Foundation
 
 extension PutEventsInput: AmplifyStringConvertible {}
 
-extension PutEventsOutputResponse: AmplifyStringConvertible {
+extension PutEventsOutput: AmplifyStringConvertible {
     enum CodingKeys: Swift.String, Swift.CodingKey {
         case eventsResponse = "EventsResponse"
     }
-    
+
     public func encode(to encoder: Encoder) throws {
         var encodeContainer = encoder.container(keyedBy: CodingKeys.self)
         if let eventsResponse = self.eventsResponse {
@@ -25,7 +25,7 @@ extension PutEventsOutputResponse: AmplifyStringConvertible {
 
 extension UpdateEndpointInput: AmplifyStringConvertible {}
 
-extension UpdateEndpointOutputResponse: AmplifyStringConvertible {
+extension UpdateEndpointOutput: AmplifyStringConvertible {
     enum CodingKeys: Swift.String, Swift.CodingKey {
         case messageBody = "MessageBody"
     }

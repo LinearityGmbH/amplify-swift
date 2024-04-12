@@ -6,11 +6,10 @@
 //
 
 import Foundation
-
 import AWSS3
 import Amplify
 import AWSPluginsCore
-@_spi(FoundationClientEngine) import AWSPluginsCore
+@_spi(PluginHTTPClientEngine) import AWSPluginsCore
 import ClientRuntime
 
 /// - Tag: AWSS3StorageService
@@ -55,42 +54,33 @@ class AWSS3StorageService: AWSS3StorageServiceBehavior, StorageServiceProxy {
                      httpClientEngineProxy: HttpClientEngineProxy? = nil,
                      storageConfiguration: StorageConfiguration = .default,
                      storageTransferDatabase: StorageTransferDatabase = .default,
+                     fileSystem: FileSystem = .default,
                      sessionConfiguration: URLSessionConfiguration? = nil,
                      delegateQueue: OperationQueue? = nil,
                      logger: Logger = storageLogger) throws {
         let credentialsProvider = authService.getCredentialsProvider()
         let clientConfig = try S3Client.S3ClientConfiguration(
-            credentialsProvider: credentialsProvider,
             region: region,
-            signingRegion: region)
+            credentialsProvider: credentialsProvider,
+            signingRegion: region
+        )
 
-        if var proxy = httpClientEngineProxy {
-            let httpClientEngine: HttpClientEngine
-            #if os(iOS) || os(macOS)
-            httpClientEngine = clientConfig.httpClientEngine
-            #else
-            // For any platform except iOS or macOS
-            // Use Foundation instead of CRT for networking.
-            httpClientEngine = FoundationClientEngine()
-            #endif
-            proxy.target = httpClientEngine
-            clientConfig.httpClientEngine = proxy
+        if var httpClientEngineProxy = httpClientEngineProxy {
+            httpClientEngineProxy.target = baseClientEngine(for: clientConfig)
+            clientConfig.httpClientEngine = UserAgentSettingClientEngine(
+                target: httpClientEngineProxy
+            )
         } else {
-            #if os(iOS) || os(macOS) // no-op
-            #else
-            // For any platform except iOS or macOS
-            // Use Foundation instead of CRT for networking.
-            clientConfig.httpClientEngine = FoundationClientEngine()
-            #endif
+            clientConfig.httpClientEngine = .userAgentEngine(for: clientConfig)
         }
 
         let s3Client = S3Client(config: clientConfig)
         let awsS3 = AWSS3Adapter(s3Client, config: clientConfig)
         let preSignedURLBuilder = AWSS3PreSignedURLBuilderAdapter(config: clientConfig, bucket: bucket)
 
-        var _sessionConfiguration: URLSessionConfiguration
+        var sessionConfig: URLSessionConfiguration
         if let sessionConfiguration = sessionConfiguration {
-            _sessionConfiguration = sessionConfiguration
+            sessionConfig = sessionConfiguration
         } else {
             #if os(macOS)
             let sessionConfiguration = URLSessionConfiguration.default
@@ -100,15 +90,17 @@ class AWSS3StorageService: AWSS3StorageServiceBehavior, StorageServiceProxy {
             sessionConfiguration.urlCache = nil
             sessionConfiguration.allowsCellularAccess = storageConfiguration.allowsCellularAccess
             sessionConfiguration.timeoutIntervalForResource = TimeInterval(storageConfiguration.timeoutIntervalForResource)
-            _sessionConfiguration = sessionConfiguration
+            sessionConfig = sessionConfiguration
         }
 
-        _sessionConfiguration.sharedContainerIdentifier = storageConfiguration.sharedContainerIdentifier
+        sessionConfig.sharedContainerIdentifier = storageConfiguration.sharedContainerIdentifier
 
         self.init(authService: authService,
                   storageConfiguration: storageConfiguration,
                   storageTransferDatabase: storageTransferDatabase,
-                  sessionConfiguration: _sessionConfiguration,
+                  fileSystem: fileSystem,
+                  sessionConfiguration: sessionConfig,
+                  logger: logger,
                   s3Client: s3Client,
                   preSignedURLBuilder: preSignedURLBuilder,
                   awsS3: awsS3,
@@ -141,7 +133,7 @@ class AWSS3StorageService: AWSS3StorageServiceBehavior, StorageServiceProxy {
         self.preSignedURLBuilder = preSignedURLBuilder
         self.awsS3 = awsS3
         self.bucket = bucket
-        self.userAgent = AmplifyAWSServiceConfiguration.frameworkMetaData(includeOS: true).description
+        self.userAgent = "\(AmplifyAWSServiceConfiguration.userAgentLib) \(AmplifyAWSServiceConfiguration.userAgentOS)"
 
         StorageBackgroundEventsRegistry.register(identifier: identifier)
 
@@ -193,7 +185,12 @@ class AWSS3StorageService: AWSS3StorageServiceBehavior, StorageServiceProxy {
                                                                  bucket: pair.transferTask.bucket,
                                                                  key: pair.transferTask.key,
                                                                  uploadFile: uploadFile)
-                guard let session = StorageMultipartUploadSession(client: client, transferTask: pair.transferTask, multipartUpload: multipartUpload, logger: logger) else {
+                guard let session = StorageMultipartUploadSession(
+                    client: client,
+                    transferTask: pair.transferTask,
+                    multipartUpload: multipartUpload,
+                    logger: logger
+                ) else {
                     return
                 }
                 session.restart()

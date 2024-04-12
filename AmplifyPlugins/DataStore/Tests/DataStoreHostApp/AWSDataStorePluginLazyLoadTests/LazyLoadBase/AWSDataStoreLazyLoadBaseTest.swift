@@ -66,8 +66,20 @@ class AWSDataStoreLazyLoadBaseTest: XCTestCase {
             setupConfig()
             Amplify.Logging.logLevel = logLevel
             
-            try Amplify.add(plugin: AWSDataStorePlugin(modelRegistration: models,
-                                                       configuration: .custom(syncMaxRecords: 100)))
+            #if os(watchOS)
+            try Amplify.add(plugin: AWSDataStorePlugin(
+                modelRegistration: models,
+                configuration: .custom(
+                    errorHandler: { error in Amplify.Logging.error("DataStore ErrorHandler error: \(error)")},
+                    syncMaxRecords: 100,
+                    disableSubscriptions: { false })))
+            #else
+            try Amplify.add(plugin: AWSDataStorePlugin(
+                modelRegistration: models,
+                configuration: .custom(
+                    errorHandler: { error in Amplify.Logging.error("DataStore ErrorHandler error: \(error)")},
+                    syncMaxRecords: 100)))
+            #endif
             try Amplify.add(plugin: AWSAPIPlugin(sessionFactory: AmplifyURLSessionFactory()))
             try Amplify.configure(amplifyConfig)
             
@@ -85,7 +97,12 @@ class AWSDataStoreLazyLoadBaseTest: XCTestCase {
             setupConfig()
             Amplify.Logging.logLevel = logLevel
             
+            #if os(watchOS)
+            try Amplify.add(plugin: AWSDataStorePlugin(modelRegistration: models, configuration: .subscriptionsDisabled))
+            #else
             try Amplify.add(plugin: AWSDataStorePlugin(modelRegistration: models))
+            #endif
+                            
             try Amplify.configure(amplifyConfig)
             
             try await deleteMutationEvents()

@@ -21,7 +21,12 @@ class LocalStoreIntegrationTestBase: XCTestCase {
         continueAfterFailure = false
 
         do {
+            #if os(watchOS)
+            try Amplify.add(plugin: AWSDataStorePlugin(modelRegistration: models, 
+                                                       configuration: .subscriptionsDisabled))
+            #else
             try Amplify.add(plugin: AWSDataStorePlugin(modelRegistration: models))
+            #endif
             try Amplify.configure(AmplifyConfiguration(dataStore: nil))
         } catch {
             XCTFail(String(describing: error))
@@ -30,13 +35,13 @@ class LocalStoreIntegrationTestBase: XCTestCase {
     }
 
     override func tearDown() async throws {
-        let clearComplete = asyncExpectation(description: "clear completed")
+        let clearComplete = expectation(description: "clear completed")
         
         Task {
             try await Amplify.DataStore.clear()
-            await clearComplete.fulfill()
+            clearComplete.fulfill()
         }
-        await waitForExpectations([clearComplete], timeout: 5)
+        await fulfillment(of: [clearComplete], timeout: 5)
         await Amplify.reset()
     }
 

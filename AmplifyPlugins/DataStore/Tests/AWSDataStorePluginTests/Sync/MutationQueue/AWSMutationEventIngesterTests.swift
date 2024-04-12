@@ -37,12 +37,12 @@ class AWSMutationEventIngesterTests: XCTestCase {
             try storageAdapter.setUp(modelSchemas: StorageEngine.systemModelSchemas)
 
             let syncEngine = try RemoteSyncEngine(storageAdapter: storageAdapter,
-                                                  dataStoreConfiguration: .default)
+                                                  dataStoreConfiguration: .testDefault())
 
             let validAPIPluginKey = "MockAPICategoryPlugin"
             let validAuthPluginKey = "MockAuthCategoryPlugin"
             let storageEngine = StorageEngine(storageAdapter: storageAdapter,
-                                              dataStoreConfiguration: .default,
+                                              dataStoreConfiguration: .testDefault(),
                                               syncEngine: syncEngine,
                                               validAPIPluginKey: validAPIPluginKey,
                                               validAuthPluginKey: validAuthPluginKey)
@@ -96,7 +96,7 @@ class AWSMutationEventIngesterTests: XCTestCase {
             XCTAssert(mutationEvents.first?.json.contains(post.id) ?? false)
         }
 
-        wait(for: [mutationEventQueryCompleted], timeout: 1.0)
+        await fulfillment(of: [mutationEventQueryCompleted], timeout: 1.0)
 
     }
 

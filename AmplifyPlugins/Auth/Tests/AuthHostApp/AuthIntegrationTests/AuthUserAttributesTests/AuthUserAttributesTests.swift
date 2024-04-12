@@ -124,20 +124,14 @@ class AuthUserAttributesTests: AWSAuthBaseTest {
             XCTFail("name attribute not found")
         }
     }
-
-    /// Test resending code for the user's updated email attribute.
-    /// Internally, Cognito's `GetUserAttributeVerificationCode` API will be called with metadata as clientMetadata.
-    /// The configured lambda trigger will invoke the custom message lambda with the client metadata payload. See
-    /// https://docs.aws.amazon.com/cognito-user-identity-pools/latest/APIReference/API_GetUserAttributeVerificationCode.html
-    /// for more details.
-    ///
-    /// - Given: A confirmed user, with email added to the user's attributes (sending first confirmation code)
+    
+    /// - Given: A confirmed user
     /// - When:
-    ///    - I invoke Amplify.Auth.resendConfirmationCode for email
+    ///    - I invoke Amplify.Auth.update with email attribute and then confirm the email attribute with an invalid code
     /// - Then:
-    ///    - The request should be successful and the email specified should receive a second confirmation code
+    ///    - The confirmation request should fail with a Auth service error
     ///
-    func testSuccessfulResendConfirmationCodeWithUpdatedEmail() async throws {
+    func testSuccessfulUserAttributesConfirmation() async throws {
         let username = "integTest\(UUID().uuidString)"
         let password = "P123@\(UUID().uuidString)"
         let updatedEmail = "\(username)@amazon.com"
@@ -147,10 +141,26 @@ class AuthUserAttributesTests: AWSAuthBaseTest {
                                                email: defaultTestEmail)
         XCTAssertTrue(didSucceed, "SignIn operation failed")
 
-        _ = try await Amplify.Auth.update(userAttribute: AuthUserAttribute(.email, value: updatedEmail))
-        let pluginOptions = AWSAttributeResendConfirmationCodeOptions(metadata: ["mydata": "myvalue"])
-        let options = AuthAttributeResendConfirmationCodeRequest.Options(pluginOptions: pluginOptions)
-        _ = try await Amplify.Auth.resendConfirmationCode(forUserAttributeKey: .email, options: options)
+        let pluginOptions = AWSAuthUpdateUserAttributeOptions(metadata: ["mydata": "myvalue"])
+        let options = AuthUpdateUserAttributeRequest.Options(pluginOptions: pluginOptions)
+        let updateResult = try await Amplify.Auth.update(userAttribute: AuthUserAttribute(.email, value: updatedEmail), options: options)
+
+        switch updateResult.nextStep {
+        case .confirmAttributeWithCode(let deliveryDetails, let info):
+            print("Confirm the attribute with details send to - \(deliveryDetails) \(String(describing: info))")
+        case .done:
+            print("Update completed")
+        }
+        
+        do {
+            try await Amplify.Auth.confirm(userAttribute: .email, confirmationCode: "123")
+            XCTFail("User attribute confirmation unexpectedly succeeded")
+        } catch {
+            guard case AuthError.service(_, _, _) = error else {
+                XCTFail("Should throw service error")
+                return
+            }
+        }
     }
 
     /// Test resending code for the user's updated email attribute.
@@ -161,11 +171,39 @@ class AuthUserAttributesTests: AWSAuthBaseTest {
     ///
     /// - Given: A confirmed user, with email added to the user's attributes (sending first confirmation code)
     /// - When:
-    ///    - I invoke Amplify.Auth.resendConfirmationCode for email
+    ///    - I invoke Amplify.Auth.sendVerificationCode for email
     /// - Then:
     ///    - The request should be successful and the email specified should receive a second confirmation code
     ///
-    func testSuccessfulResendConfirmationCode() async throws {
+    func testSuccessfulSendVerificationCodeWithUpdatedEmail() async throws {
+        let username = "integTest\(UUID().uuidString)"
+        let password = "P123@\(UUID().uuidString)"
+        let updatedEmail = "\(username)@amazon.com"
+
+        let didSucceed = try await AuthSignInHelper.registerAndSignInUser(username: username,
+                                               password: password,
+                                               email: defaultTestEmail)
+        XCTAssertTrue(didSucceed, "SignIn operation failed")
+
+        _ = try await Amplify.Auth.update(userAttribute: AuthUserAttribute(.email, value: updatedEmail))
+        let pluginOptions = AWSSendUserAttributeVerificationCodeOptions(metadata: ["mydata": "myvalue"])
+        let options = AuthSendUserAttributeVerificationCodeRequest.Options(pluginOptions: pluginOptions)
+        _ = try await Amplify.Auth.sendVerificationCode(forUserAttributeKey: .email, options: options)
+    }
+
+    /// Test resending code for the user's updated email attribute.
+    /// Internally, Cognito's `GetUserAttributeVerificationCode` API will be called with metadata as clientMetadata.
+    /// The configured lambda trigger will invoke the custom message lambda with the client metadata payload. See
+    /// https://docs.aws.amazon.com/cognito-user-identity-pools/latest/APIReference/API_GetUserAttributeVerificationCode.html
+    /// for more details.
+    ///
+    /// - Given: A confirmed user, with email added to the user's attributes (sending first confirmation code)
+    /// - When:
+    ///    - I invoke Amplify.Auth.sendVerificationCode for email
+    /// - Then:
+    ///    - The request should be successful and the email specified should receive a second confirmation code
+    ///
+    func testSuccessfulSendVerificationCode() async throws {
         let username = "integTest\(UUID().uuidString)"
         let password = "P123@\(UUID().uuidString)"
 
@@ -174,9 +212,9 @@ class AuthUserAttributesTests: AWSAuthBaseTest {
                                                email: defaultTestEmail)
         XCTAssertTrue(didSucceed, "SignIn operation failed")
 
-        let pluginOptions = AWSAttributeResendConfirmationCodeOptions(metadata: ["mydata": "myvalue"])
-        let options = AuthAttributeResendConfirmationCodeRequest.Options(pluginOptions: pluginOptions)
-        _ = try await Amplify.Auth.resendConfirmationCode(forUserAttributeKey: .email, options: options)
+        let pluginOptions = AWSSendUserAttributeVerificationCodeOptions(metadata: ["mydata": "myvalue"])
+        let options = AuthSendUserAttributeVerificationCodeRequest.Options(pluginOptions: pluginOptions)
+        _ = try await Amplify.Auth.sendVerificationCode(forUserAttributeKey: .email, options: options)
     }
 
     /// Test changing/updating users password.

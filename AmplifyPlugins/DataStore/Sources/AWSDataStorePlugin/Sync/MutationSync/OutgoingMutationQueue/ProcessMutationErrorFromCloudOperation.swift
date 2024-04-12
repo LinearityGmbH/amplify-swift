@@ -10,6 +10,7 @@ import Combine
 import Foundation
 import AWSPluginsCore
 
+// swiftlint:disable type_body_length file_length
 /// Checks the GraphQL error response for specific error scenarios related to data synchronziation to the local store.
 /// 1. When there is an APIError which is for an unauthenticated user, call the error handler.
 /// 2. When there is a "conditional request failed" error, then emit to the Hub a 'conditionalSaveFailed' event.
@@ -27,6 +28,7 @@ class ProcessMutationErrorFromCloudOperation: AsynchronousOperation {
     private let completion: (Result<MutationEvent?, Error>) -> Void
     private var mutationOperation: AtomicValue<GraphQLOperation<MutationSync<AnyModel>>?>
     private weak var api: APICategoryGraphQLBehaviorExtended?
+    private weak var reconciliationQueue: IncomingEventReconciliationQueue?
 
     init(dataStoreConfiguration: DataStoreConfiguration,
          mutationEvent: MutationEvent,
@@ -34,6 +36,7 @@ class ProcessMutationErrorFromCloudOperation: AsynchronousOperation {
          storageAdapter: StorageEngineAdapter,
          graphQLResponseError: GraphQLResponseError<MutationSync<AnyModel>>? = nil,
          apiError: APIError? = nil,
+         reconciliationQueue: IncomingEventReconciliationQueue? = nil,
          completion: @escaping (Result<MutationEvent?, Error>) -> Void) {
         self.dataStoreConfiguration = dataStoreConfiguration
         self.mutationEvent = mutationEvent
@@ -41,6 +44,7 @@ class ProcessMutationErrorFromCloudOperation: AsynchronousOperation {
         self.storageAdapter = storageAdapter
         self.graphQLResponseError = graphQLResponseError
         self.apiError = apiError
+        self.reconciliationQueue = reconciliationQueue
         self.completion = completion
         self.mutationOperation = AtomicValue(initialValue: nil)
 
@@ -312,9 +316,24 @@ class ProcessMutationErrorFromCloudOperation: AsynchronousOperation {
             dataStoreConfiguration.errorHandler(error)
         }
 
-        if case .success(let response) = cloudResult,
-            case .failure(let error) = response {
-            dataStoreConfiguration.errorHandler(error)
+        if case let .success(graphQLResponse) = cloudResult {
+            if case .failure(let error) = graphQLResponse {
+                dataStoreConfiguration.errorHandler(error)
+            } else if case let .success(graphQLResult) = graphQLResponse {
+                guard let reconciliationQueue = reconciliationQueue else {
+                    let dataStoreError = DataStoreError.configuration(
+                        "reconciliationQueue is unexpectedly nil",
+                        """
+                        The reference to reconciliationQueue has been released while an ongoing mutation was being processed.
+                        \(AmplifyErrorMessages.reportBugToAWS())
+                        """
+                    )
+                    finish(result: .failure(dataStoreError))
+                    return
+                }
+
+                reconciliationQueue.offer([graphQLResult], modelName: mutationEvent.modelName)
+            }
         }
 
         finish(result: .success(nil))
@@ -339,7 +358,7 @@ class ProcessMutationErrorFromCloudOperation: AsynchronousOperation {
         }
 
         let identifier = remoteModel.model.identifier(schema: modelSchema)
-        
+
         storageAdapter.delete(untypedModelType: modelType,
                               modelSchema: modelSchema,
                               withIdentifier: identifier,
@@ -453,3 +472,4 @@ extension ProcessMutationErrorFromCloudOperation: DefaultLogger {
         Self.log
     }
 }
+// swiftlint:enable type_body_length file_length

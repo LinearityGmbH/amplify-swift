@@ -179,6 +179,14 @@ class MockSQLiteStorageEngineAdapter: StorageEngineAdapter {
 
     func save<M: Model>(_ model: M,
                         modelSchema: ModelSchema,
+                        condition: QueryPredicate?,
+                        eagerLoad: Bool) -> DataStoreResult<M> {
+        XCTFail("Not yet implemented")
+        return .failure(.internalOperation("", "", nil))
+    }
+
+    func save<M: Model>(_ model: M,
+                        modelSchema: ModelSchema,
                         condition where: QueryPredicate?,
                         eagerLoad: Bool,
                         completion: @escaping DataStoreCallback<M>) {
@@ -300,6 +308,8 @@ class MockStorageEngineBehavior: StorageEngineBehavior {
     func setupPublisher() {
 
     }
+
+    var syncsFromRemote: Bool { true }
 
     var mockSyncEnginePublisher: PassthroughSubject<RemoteSyncEngineEvent, DataStoreError>!
     var mockSyncEngineSubscription: AnyCancellable! {

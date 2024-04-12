@@ -11,7 +11,7 @@ import AWSPluginsCore
 import ClientRuntime
 import AWSCognitoIdentityProvider
 
-class AWSAuthFetchUserAttributeTask: AuthFetchUserAttributeTask {
+class AWSAuthFetchUserAttributeTask: AuthFetchUserAttributeTask, DefaultLogger {
     typealias CognitoUserPoolFactory = () throws -> CognitoUserPoolBehavior
 
     private let request: AuthFetchUserAttributesRequest
@@ -37,9 +37,7 @@ class AWSAuthFetchUserAttributeTask: AuthFetchUserAttributeTask {
             return try await getUserAttributes(with: accessToken)
         } catch let error as AuthErrorConvertible {
             throw error.authError
-        } catch let error as AuthError {
-            throw error
-        } catch let error {
+        } catch {
             throw AuthError.unknown("Unable to execute auth task", error)
         }
     }

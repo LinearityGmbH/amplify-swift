@@ -45,8 +45,10 @@ class SyncMutationToCloudOperationTests: XCTestCase {
         var listenerFromSecondRequestOptional: GraphQLOperation<MutationSync<AnyModel>>.ResultListener?
 
         var numberOfTimesEntered = 0
-        let responder = MutateRequestListenerResponder<MutationSync<AnyModel>> { _, eventListener in
+        let responder = MutateRequestListenerResponder<MutationSync<AnyModel>> { request, eventListener in
             if numberOfTimesEntered == 0 {
+                let requestInputVersion = request.variables.flatMap { $0["input"] as? [String: Any] }.flatMap { $0["_version"] as? Int }
+                XCTAssertEqual(requestInputVersion, 10)
                 listenerFromFirstRequestOptional = eventListener
                 expectFirstCallToAPIMutate.fulfill()
             } else if numberOfTimesEntered == 1 {
@@ -67,15 +69,27 @@ class SyncMutationToCloudOperationTests: XCTestCase {
             expectMutationRequestCompletion.fulfill()
         }
 
-        let operation = await SyncMutationToCloudOperation(mutationEvent: mutationEvent,
-                                                     api: mockAPIPlugin,
-                                                     authModeStrategy: AWSDefaultAuthModeStrategy(),
-                                                     networkReachabilityPublisher: publisher,
-                                                     currentAttemptNumber: 1,
-                                                     completion: completion)
+        let model = MockSynced(id: "id-1")
+        let operation = await SyncMutationToCloudOperation(
+            mutationEvent: mutationEvent,
+            getLatestSyncMetadata: {
+                MutationSyncMetadata(
+                    modelId: model.id,
+                    modelName: model.modelName,
+                    deleted: false,
+                    lastChangedAt: Date().unixSeconds,
+                    version: 10
+                )
+            },
+            api: mockAPIPlugin,
+            authModeStrategy: AWSDefaultAuthModeStrategy(),
+            networkReachabilityPublisher: publisher,
+            currentAttemptNumber: 1,
+            completion: completion
+        )
         let queue = OperationQueue()
         queue.addOperation(operation)
-        wait(for: [expectFirstCallToAPIMutate], timeout: defaultAsyncWaitTimeout)
+        await fulfillment(of: [expectFirstCallToAPIMutate], timeout: defaultAsyncWaitTimeout)
         guard let listenerFromFirstRequest = listenerFromFirstRequestOptional else {
             XCTFail("Listener was not called through MockAPICategoryPlugin")
             return
@@ -83,14 +97,14 @@ class SyncMutationToCloudOperationTests: XCTestCase {
 
         let urlError = URLError(URLError.notConnectedToInternet)
         listenerFromFirstRequest(.failure(APIError.networkError("mock NotConnectedToInternetError", nil, urlError)))
-        wait(for: [expectSecondCallToAPIMutate], timeout: defaultAsyncWaitTimeout)
+        await fulfillment(of: [expectSecondCallToAPIMutate], timeout: defaultAsyncWaitTimeout)
 
         guard let listenerFromSecondRequest = listenerFromSecondRequestOptional else {
             XCTFail("Listener was not called through MockAPICategoryPlugin")
             return
         }
 
-        let model = MockSynced(id: "id-1")
+
         let anyModel = try model.eraseToAnyModel()
         let remoteSyncMetadata = MutationSyncMetadata(modelId: model.id,
                                                       modelName: model.modelName,
@@ -100,7 +114,7 @@ class SyncMutationToCloudOperationTests: XCTestCase {
         let remoteMutationSync = MutationSync(model: anyModel, syncMetadata: remoteSyncMetadata)
         listenerFromSecondRequest(.success(.success(remoteMutationSync)))
         // waitForExpectations(timeout: 1)
-        wait(for: [expectMutationRequestCompletion], timeout: defaultAsyncWaitTimeout)
+        await fulfillment(of: [expectMutationRequestCompletion], timeout: defaultAsyncWaitTimeout)
     }
 
     func testRetryOnChangeReachability() async throws {
@@ -139,16 +153,19 @@ class SyncMutationToCloudOperationTests: XCTestCase {
         let completion: GraphQLOperation<MutationSync<AnyModel>>.ResultListener = { _ in
             expectMutationRequestCompletion.fulfill()
         }
-        let operation = await SyncMutationToCloudOperation(mutationEvent: mutationEvent,
-                                                     api: mockAPIPlugin,
-                                                     authModeStrategy: AWSDefaultAuthModeStrategy(),
-                                                     networkReachabilityPublisher: publisher,
-                                                     currentAttemptNumber: 1,
-                                                     requestRetryablePolicy: mockRequestRetryPolicy,
-                                                     completion: completion)
+        let operation = await SyncMutationToCloudOperation(
+            mutationEvent: mutationEvent,
+            getLatestSyncMetadata: { nil },
+            api: mockAPIPlugin,
+            authModeStrategy: AWSDefaultAuthModeStrategy(),
+            networkReachabilityPublisher: publisher,
+            currentAttemptNumber: 1,
+            requestRetryablePolicy: mockRequestRetryPolicy,
+            completion: completion
+        )
         let queue = OperationQueue()
         queue.addOperation(operation)
-        wait(for: [expectFirstCallToAPIMutate], timeout: defaultAsyncWaitTimeout)
+        await fulfillment(of: [expectFirstCallToAPIMutate], timeout: defaultAsyncWaitTimeout)
         guard let listenerFromFirstRequest = listenerFromFirstRequestOptional else {
             XCTFail("Listener was not called through MockAPICategoryPlugin")
             return
@@ -158,7 +175,7 @@ class SyncMutationToCloudOperationTests: XCTestCase {
         listenerFromFirstRequest(.failure(APIError.networkError("mock NotConnectedToInternetError", nil, urlError)))
         reachabilityPublisher.send(ReachabilityUpdate(isOnline: true))
 
-        wait(for: [expectSecondCallToAPIMutate], timeout: defaultAsyncWaitTimeout)
+        await fulfillment(of: [expectSecondCallToAPIMutate], timeout: defaultAsyncWaitTimeout)
         guard let listenerFromSecondRequest = listenerFromSecondRequestOptional else {
             XCTFail("Listener was not called through MockAPICategoryPlugin")
             return
@@ -173,7 +190,7 @@ class SyncMutationToCloudOperationTests: XCTestCase {
                                                       version: 2)
         let remoteMutationSync = MutationSync(model: anyModel, syncMetadata: remoteSyncMetadata)
         listenerFromSecondRequest(.success(.success(remoteMutationSync)))
-        wait(for: [expectMutationRequestCompletion], timeout: defaultAsyncWaitTimeout)
+        await fulfillment(of: [expectMutationRequestCompletion], timeout: defaultAsyncWaitTimeout)
     }
 
     func testAbilityToCancel() async throws {
@@ -212,16 +229,19 @@ class SyncMutationToCloudOperationTests: XCTestCase {
                 break
             }
         }
-        let operation = await SyncMutationToCloudOperation(mutationEvent: mutationEvent,
-                                                     api: mockAPIPlugin,
-                                                     authModeStrategy: AWSDefaultAuthModeStrategy(),
-                                                     networkReachabilityPublisher: publisher,
-                                                     currentAttemptNumber: 1,
-                                                     requestRetryablePolicy: mockRequestRetryPolicy,
-                                                     completion: completion)
+        let operation = await SyncMutationToCloudOperation(
+            mutationEvent: mutationEvent,
+            getLatestSyncMetadata: { nil },
+            api: mockAPIPlugin,
+            authModeStrategy: AWSDefaultAuthModeStrategy(),
+            networkReachabilityPublisher: publisher,
+            currentAttemptNumber: 1,
+            requestRetryablePolicy: mockRequestRetryPolicy,
+            completion: completion
+        )
         let queue = OperationQueue()
         queue.addOperation(operation)
-        wait(for: [expectFirstCallToAPIMutate], timeout: defaultAsyncWaitTimeout)
+        await fulfillment(of: [expectFirstCallToAPIMutate], timeout: defaultAsyncWaitTimeout)
         guard let listenerFromFirstRequest = listenerFromFirstRequestOptional else {
             XCTFail("Listener was not called through MockAPICategoryPlugin")
             return
@@ -232,7 +252,195 @@ class SyncMutationToCloudOperationTests: XCTestCase {
 
         // At this point, we will be "waiting forever" to retry our request or until the operation is canceled
         operation.cancel()
-        wait(for: [expectMutationRequestFailed], timeout: defaultAsyncWaitTimeout)
+        await fulfillment(of: [expectMutationRequestFailed], timeout: defaultAsyncWaitTimeout)
+    }
+    
+    // MARK: - GetRetryAdviceIfRetryableTests
+    
+    func testGetRetryAdvice_NetworkError_RetryTrue() async throws {
+        let operation = await SyncMutationToCloudOperation(
+            mutationEvent: try createMutationEvent(),
+            getLatestSyncMetadata: { nil },
+            api: mockAPIPlugin,
+            authModeStrategy: AWSDefaultAuthModeStrategy(),
+            networkReachabilityPublisher: publisher,
+            currentAttemptNumber: 1,
+            completion: { _ in }
+        )
+        
+        let error = APIError.networkError("", nil, URLError(.userAuthenticationRequired))
+        let advice = operation.getRetryAdviceIfRetryable(error: error)
+        XCTAssertTrue(advice.shouldRetry)
+    }
+    
+    func testGetRetryAdvice_HTTPStatusError401WithMultiAuth_RetryTrue() async throws {
+        let operation = await SyncMutationToCloudOperation(
+            mutationEvent: try createMutationEvent(),
+            getLatestSyncMetadata: { nil },
+            api: mockAPIPlugin,
+            authModeStrategy: MockMultiAuthModeStrategy(),
+            networkReachabilityPublisher: publisher,
+            currentAttemptNumber: 1,
+            completion: { _ in }
+        )
+        let response = HTTPURLResponse(url: URL(string: "http://localhost")!,
+                                       statusCode: 401,
+                                       httpVersion: nil,
+                                       headerFields: nil)!
+        let error = APIError.httpStatusError(401, response)
+        let advice = operation.getRetryAdviceIfRetryable(error: error)
+        XCTAssertTrue(advice.shouldRetry)
+    }
+    
+    /// Given: Model with multiple auth types. Mutation requests always fail with 401 error code
+    /// When: Mutating model fails with 401
+    /// Then: DataStore will try again with each auth type and eventually fails
+    func testGetRetryAdviceForEachModelAuthTypeThenFail_HTTPStatusError401() async throws {
+        var numberOfTimesEntered = 0
+        let mutationEvent = try createMutationEvent()
+        let authStrategy = MockMultiAuthModeStrategy()
+        let expectedNumberOfTimesEntered = authStrategy.authTypesFor(schema: mutationEvent.schema, operation: .create).count
+        
+        let expectCalllToApiMutateNTimesAndFail = expectation(description: "Call API.mutate \(expectedNumberOfTimesEntered) times and then fail")
+        
+        let response = HTTPURLResponse(url: URL(string: "http://localhost")!,
+                                       statusCode: 401,
+                                       httpVersion: nil,
+                                       headerFields: nil)!
+        let error = APIError.httpStatusError(401, response)
+        
+        let operation = await SyncMutationToCloudOperation(
+            mutationEvent: mutationEvent,
+            getLatestSyncMetadata: { nil },
+            api: mockAPIPlugin,
+            authModeStrategy: authStrategy,
+            networkReachabilityPublisher: publisher,
+            currentAttemptNumber: 1,
+            completion: { result in
+                if numberOfTimesEntered == expectedNumberOfTimesEntered {
+                    expectCalllToApiMutateNTimesAndFail.fulfill()
+                    
+                } else {
+                    XCTFail("API.mutate was called incorrect amount of times, expected: \(expectedNumberOfTimesEntered), was : \(numberOfTimesEntered)")
+                }
+            }
+        )
+        
+        let responder = MutateRequestListenerResponder<MutationSync<AnyModel>> { request, eventListener in
+            let requestOptions = GraphQLOperationRequest<MutationSync<AnyModel>>.Options(pluginOptions: nil)
+            let request = GraphQLOperationRequest<MutationSync<AnyModel>>(apiName: request.apiName,
+                                                     operationType: .mutation,
+                                                     document: request.document,
+                                                     variables: request.variables,
+                                                     responseType: request.responseType,
+                                                     options: requestOptions)
+            let operation = MockGraphQLOperation(request: request, responseType: request.responseType)
+            
+            numberOfTimesEntered += 1
+            
+            DispatchQueue.global().sync {
+                // Fail with 401 status code
+                eventListener!(.failure(error))
+            }
+            
+            return operation
+        }
+        
+        mockAPIPlugin.responders[.mutateRequestListener] = responder
+        
+        let queue = OperationQueue()
+        queue.addOperation(operation)
+        
+        await fulfillment(of: [expectCalllToApiMutateNTimesAndFail], timeout: defaultAsyncWaitTimeout)
+    }
+    
+    func testGetRetryAdvice_OperationErrorAuthErrorWithMultiAuth_RetryTrue() async throws {
+        let operation = await SyncMutationToCloudOperation(
+            mutationEvent: try createMutationEvent(),
+            getLatestSyncMetadata: { nil },
+            api: mockAPIPlugin,
+            authModeStrategy: MockMultiAuthModeStrategy(),
+            networkReachabilityPublisher: publisher,
+            currentAttemptNumber: 1,
+            completion: { _ in }
+        )
+        
+        let authError = AuthError.notAuthorized("", "", nil)
+        let error = APIError.operationError("", "", authError)
+        let advice = operation.getRetryAdviceIfRetryable(error: error)
+        XCTAssertTrue(advice.shouldRetry)
+    }
+    
+    func testGetRetryAdvice_OperationErrorAuthErrorWithSingleAuth_RetryFalse() async throws {
+        let operation = await SyncMutationToCloudOperation(
+            mutationEvent: try createMutationEvent(),
+            getLatestSyncMetadata: { nil },
+            api: mockAPIPlugin,
+            authModeStrategy: AWSDefaultAuthModeStrategy(),
+            networkReachabilityPublisher: publisher,
+            currentAttemptNumber: 1,
+            completion: { _ in }
+        )
+        
+        let authError = AuthError.notAuthorized("", "", nil)
+        let error = APIError.operationError("", "", authError)
+        let advice = operation.getRetryAdviceIfRetryable(error: error)
+        XCTAssertFalse(advice.shouldRetry)
+    }
+    
+    func testGetRetryAdvice_OperationErrorAuthErrorSessionExpired_RetryTrue() async throws {
+        let operation = await SyncMutationToCloudOperation(
+            mutationEvent: try createMutationEvent(),
+            getLatestSyncMetadata: { nil },
+            api: mockAPIPlugin,
+            authModeStrategy: AWSDefaultAuthModeStrategy(),
+            networkReachabilityPublisher: publisher,
+            currentAttemptNumber: 1,
+            completion: { _ in }
+        )
+        
+        let authError = AuthError.sessionExpired("", "", nil)
+        let error = APIError.operationError("", "", authError)
+        let advice = operation.getRetryAdviceIfRetryable(error: error)
+        XCTAssertTrue(advice.shouldRetry)
+    }
+    
+    func testGetRetryAdvice_OperationErrorAuthErrorSignedOut_RetryTrue() async throws {
+        let operation = await SyncMutationToCloudOperation(
+            mutationEvent: try createMutationEvent(),
+            getLatestSyncMetadata: { nil },
+            api: mockAPIPlugin,
+            authModeStrategy: AWSDefaultAuthModeStrategy(),
+            networkReachabilityPublisher: publisher,
+            currentAttemptNumber: 1,
+            completion: { _ in }
+        )
+        
+        let authError = AuthError.signedOut("", "", nil)
+        let error = APIError.operationError("", "", authError)
+        let advice = operation.getRetryAdviceIfRetryable(error: error)
+        XCTAssertTrue(advice.shouldRetry)
+    }
+    
+    private func createMutationEvent() throws -> MutationEvent {
+        let post1 = Post(title: "post1", content: "content1", createdAt: .now())
+        return try MutationEvent(model: post1, modelSchema: post1.schema, mutationType: .create)
+    }
+    
+}
+
+public class MockMultiAuthModeStrategy: AuthModeStrategy {
+    public weak var authDelegate: AuthModeStrategyDelegate?
+    required public init() {}
+
+    public func authTypesFor(schema: ModelSchema,
+                             operation: ModelOperation) -> AWSAuthorizationTypeIterator {
+        return AWSAuthorizationTypeIterator(withValues: [.amazonCognitoUserPools, .apiKey])
+    }
+
+    public func authTypesFor(schema: ModelSchema,
+                             operations: [ModelOperation]) -> AWSAuthorizationTypeIterator {
+        return AWSAuthorizationTypeIterator(withValues: [.amazonCognitoUserPools, .apiKey])
     }
 }
 

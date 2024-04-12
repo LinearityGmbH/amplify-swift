@@ -17,20 +17,20 @@ class AWSCognitoAuthUserBehaviorTests: BasePluginTest {
     override func setUp() {
         super.setUp()
         mockIdentityProvider = MockIdentityProvider(
-            mockGetUserAttributeVerificationCodeOutputResponse: { _ in
-                GetUserAttributeVerificationCodeOutputResponse()
+            mockGetUserAttributeVerificationCodeOutput: { _ in
+                GetUserAttributeVerificationCodeOutput()
             },
             mockGetUserAttributeResponse: { _ in
-                GetUserOutputResponse()
+                GetUserOutput()
             },
             mockUpdateUserAttributeResponse: { _ in
-                UpdateUserAttributesOutputResponse()
+                UpdateUserAttributesOutput()
             },
-            mockConfirmUserAttributeOutputResponse: { _ in
-                try VerifyUserAttributeOutputResponse(httpResponse: .init(body: .empty, statusCode: .ok))
+            mockConfirmUserAttributeOutput: { _ in
+                try await VerifyUserAttributeOutput(httpResponse: .init(body: .empty, statusCode: .ok))
             },
-            mockChangePasswordOutputResponse: { _ in
-                try ChangePasswordOutputResponse(httpResponse: .init(body: .empty, statusCode: .ok))
+            mockChangePasswordOutput: { _ in
+                try await ChangePasswordOutput(httpResponse: .init(body: .empty, statusCode: .ok))
             }
         )
     }
@@ -45,7 +45,7 @@ class AWSCognitoAuthUserBehaviorTests: BasePluginTest {
     ///
     func testFetchUserAttributesRequest() async throws {
         mockIdentityProvider = MockIdentityProvider(mockGetUserAttributeResponse: { _ in
-            GetUserOutputResponse(
+            GetUserOutput(
                 mfaOptions: [],
                 preferredMfaSetting: "",
                 userAttributes: [.init(name: "email", value: "Amplify@amazon.com")],
@@ -67,7 +67,7 @@ class AWSCognitoAuthUserBehaviorTests: BasePluginTest {
     ///
     func testFetchUserAttributesRequestWithoutOptions() async throws {
         mockIdentityProvider = MockIdentityProvider(mockGetUserAttributeResponse: { _ in
-            GetUserOutputResponse(
+            GetUserOutput(
                 mfaOptions: [],
                 preferredMfaSetting: "",
                 userAttributes: [.init(name: "email", value: "Amplify@amazon.com")],
@@ -136,68 +136,68 @@ class AWSCognitoAuthUserBehaviorTests: BasePluginTest {
         _ = try await plugin.update(userAttributes: [emailAttribute, phoneAttribute])
     }
 
-    /// Test resendConfirmationCode(for:) operation can be invoked
+    /// Test sendVerificationCode(for:) operation can be invoked
     ///
     /// - Given: Given a configured auth plugin
     /// - When:
-    ///    - I call resendConfirmationCode(for:)  operation
+    ///    - I call sendVerificationCode(for:)  operation
     /// - Then:
     ///    - I should get a valid task completion
     ///
-    func testResendConfirmationCodeAttributeRequest() async throws {
-        mockIdentityProvider = MockIdentityProvider(mockGetUserAttributeVerificationCodeOutputResponse: { _ in
-            GetUserAttributeVerificationCodeOutputResponse(
+    func testSendVerificationCodeAttributeRequest() async throws {
+        mockIdentityProvider = MockIdentityProvider(mockGetUserAttributeVerificationCodeOutput: { _ in
+            GetUserAttributeVerificationCodeOutput(
                 codeDeliveryDetails: .init(
                     attributeName: "attributeName",
                     deliveryMedium: .email,
                     destination: "destination"))
         })
-        let pluginOptions = AWSAttributeResendConfirmationCodeOptions(metadata: ["key": "value"])
-        let options = AuthAttributeResendConfirmationCodeRequest.Options(pluginOptions: pluginOptions)
-        _ = try await plugin.resendConfirmationCode(forUserAttributeKey: .email, options: options)
+        let pluginOptions = AWSSendUserAttributeVerificationCodeOptions(metadata: ["key": "value"])
+        let options = AuthSendUserAttributeVerificationCodeRequest.Options(pluginOptions: pluginOptions)
+        _ = try await plugin.sendVerificationCode(forUserAttributeKey: .email, options: options)
     }
 
-    /// Test resendConfirmationCode(for:) operation can be invoked with plugin options
+    /// Test sendVerificationCode(for:) operation can be invoked with plugin options
     ///
     /// - Given: Given a configured auth plugin
     /// - When:
-    ///    - I call resendConfirmationCode(for:)  operation
+    ///    - I call sendVerificationCode(for:)  operation
     /// - Then:
     ///    - I should get a valid task completion
     ///
-    func testResendConfirmationCodeWithPluginOptions() async throws {
-        mockIdentityProvider = MockIdentityProvider(mockGetUserAttributeVerificationCodeOutputResponse: { request in
+    func testSendVerificationCodeWithPluginOptions() async throws {
+        mockIdentityProvider = MockIdentityProvider(mockGetUserAttributeVerificationCodeOutput: { request in
 
             XCTAssertNotNil(request.clientMetadata)
             XCTAssertEqual(request.clientMetadata?["key"], "value")
-            return GetUserAttributeVerificationCodeOutputResponse(
+            return GetUserAttributeVerificationCodeOutput(
                 codeDeliveryDetails: .init(
                     attributeName: "attributeName",
                     deliveryMedium: .email,
                     destination: "destination"))
         })
-        let pluginOptions = AWSAttributeResendConfirmationCodeOptions(metadata: ["key": "value"])
-        let options = AuthAttributeResendConfirmationCodeRequest.Options(pluginOptions: pluginOptions)
-        _ = try await plugin.resendConfirmationCode(forUserAttributeKey: .email, options: options)
+        let pluginOptions = AWSSendUserAttributeVerificationCodeOptions(metadata: ["key": "value"])
+        let options = AuthSendUserAttributeVerificationCodeRequest.Options(pluginOptions: pluginOptions)
+        _ = try await plugin.sendVerificationCode(forUserAttributeKey: .email, options: options)
     }
 
-    /// Test resendConfirmationCode(for:)  operation can be invoked without options
+    /// Test sendVerificationCode(for:)  operation can be invoked without options
     ///
     /// - Given: Given a configured auth plugin
     /// - When:
-    ///    - I call resendConfirmationCode(for:)  operation
+    ///    - I call sendVerificationCode(for:)  operation
     /// - Then:
     ///    - I should get a valid task completion
     ///
-    func testResendConfirmationCodeAttributeRequestWithoutOptions() async throws {
-        mockIdentityProvider = MockIdentityProvider(mockGetUserAttributeVerificationCodeOutputResponse: { _ in
-            GetUserAttributeVerificationCodeOutputResponse(
+    func testSendVerificationCodeAttributeRequestWithoutOptions() async throws {
+        mockIdentityProvider = MockIdentityProvider(mockGetUserAttributeVerificationCodeOutput: { _ in
+            GetUserAttributeVerificationCodeOutput(
                 codeDeliveryDetails: .init(
                     attributeName: "attributeName",
                     deliveryMedium: .email,
                     destination: "destination"))
         })
-        _ = try await plugin.resendConfirmationCode(forUserAttributeKey: .email)
+        _ = try await plugin.sendVerificationCode(forUserAttributeKey: .email)
     }
 
     /// Test confirm(userAttribute: ) operation can be invoked

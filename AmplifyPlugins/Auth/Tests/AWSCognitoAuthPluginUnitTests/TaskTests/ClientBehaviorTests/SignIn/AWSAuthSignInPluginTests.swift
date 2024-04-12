@@ -31,14 +31,14 @@ class AWSAuthSignInPluginTests: BasePluginTest {
         let clientMetadata = ["somekey": "somevalue"]
         self.mockIdentityProvider = MockIdentityProvider(mockInitiateAuthResponse: { input in
             XCTAssertEqual(clientMetadata, input.clientMetadata)
-            return InitiateAuthOutputResponse(
+            return InitiateAuthOutput(
                 authenticationResult: .none,
                 challengeName: .passwordVerifier,
-                challengeParameters: InitiateAuthOutputResponse.validChalengeParams,
+                challengeParameters: InitiateAuthOutput.validChalengeParams,
                 session: "someSession")
         }, mockRespondToAuthChallengeResponse: { input in
             XCTAssertEqual(clientMetadata, input.clientMetadata)
-            return RespondToAuthChallengeOutputResponse(
+            return RespondToAuthChallengeOutput(
                 authenticationResult: .init(
                     accessToken: Defaults.validAccessToken,
                     expiresIn: 300,
@@ -78,13 +78,13 @@ class AWSAuthSignInPluginTests: BasePluginTest {
     func testSuccessfulSignInWithAuthFlow() async {
 
         self.mockIdentityProvider = MockIdentityProvider(mockInitiateAuthResponse: { _ in
-            InitiateAuthOutputResponse(
+            InitiateAuthOutput(
                 authenticationResult: .none,
                 challengeName: .passwordVerifier,
-                challengeParameters: InitiateAuthOutputResponse.validChalengeParams,
+                challengeParameters: InitiateAuthOutput.validChalengeParams,
                 session: "someSession")
         }, mockRespondToAuthChallengeResponse: { _ in
-            RespondToAuthChallengeOutputResponse(
+            RespondToAuthChallengeOutput(
                 authenticationResult: .init(
                     accessToken: Defaults.validAccessToken,
                     expiresIn: 300,
@@ -157,13 +157,13 @@ class AWSAuthSignInPluginTests: BasePluginTest {
             mockGetCredentialsResponse: getCredentials)
 
         self.mockIdentityProvider = MockIdentityProvider(mockInitiateAuthResponse: { _ in
-            InitiateAuthOutputResponse(
+            InitiateAuthOutput(
                 authenticationResult: .none,
                 challengeName: .passwordVerifier,
-                challengeParameters: InitiateAuthOutputResponse.validChalengeParams,
+                challengeParameters: InitiateAuthOutput.validChalengeParams,
                 session: "someSession")
         }, mockRespondToAuthChallengeResponse: { _ in
-            RespondToAuthChallengeOutputResponse(
+            RespondToAuthChallengeOutput(
                 authenticationResult: .init(
                     accessToken: Defaults.validAccessToken,
                     expiresIn: 300,
@@ -201,7 +201,7 @@ class AWSAuthSignInPluginTests: BasePluginTest {
     func testSignInWithInvalidResult() async {
 
         self.mockIdentityProvider = MockIdentityProvider(mockInitiateAuthResponse: { _ in
-            InitiateAuthOutputResponse()
+            InitiateAuthOutput()
         })
         let options = AuthSignInRequest.Options()
         do {
@@ -227,7 +227,7 @@ class AWSAuthSignInPluginTests: BasePluginTest {
     func testSecondSignInAfterSignInWithInvalidResult() async {
 
         self.mockIdentityProvider = MockIdentityProvider(mockInitiateAuthResponse: { _ in
-            InitiateAuthOutputResponse()
+            InitiateAuthOutput()
         })
         let options = AuthSignInRequest.Options()
         do {
@@ -235,13 +235,13 @@ class AWSAuthSignInPluginTests: BasePluginTest {
             XCTFail("Should not receive a success response \(result)")
         } catch {
             self.mockIdentityProvider = MockIdentityProvider(mockInitiateAuthResponse: { _ in
-                InitiateAuthOutputResponse(
+                InitiateAuthOutput(
                     authenticationResult: .none,
                     challengeName: .passwordVerifier,
-                    challengeParameters: InitiateAuthOutputResponse.validChalengeParams,
+                    challengeParameters: InitiateAuthOutput.validChalengeParams,
                     session: "someSession")
             }, mockRespondToAuthChallengeResponse: { _ in
-                RespondToAuthChallengeOutputResponse(
+                RespondToAuthChallengeOutput(
                     authenticationResult: .init(
                         accessToken: Defaults.validAccessToken,
                         expiresIn: 300,
@@ -275,13 +275,13 @@ class AWSAuthSignInPluginTests: BasePluginTest {
     func testSignInWithNextStepSMS() async {
 
         self.mockIdentityProvider = MockIdentityProvider(mockInitiateAuthResponse: { _ in
-            InitiateAuthOutputResponse(
+            InitiateAuthOutput(
                 authenticationResult: .none,
                 challengeName: .passwordVerifier,
-                challengeParameters: InitiateAuthOutputResponse.validChalengeParams,
+                challengeParameters: InitiateAuthOutput.validChalengeParams,
                 session: "someSession")
         }, mockRespondToAuthChallengeResponse: { _ in
-            RespondToAuthChallengeOutputResponse(
+            RespondToAuthChallengeOutput(
                 authenticationResult: .none,
                 challengeName: .smsMfa,
                 challengeParameters: [:],
@@ -315,14 +315,14 @@ class AWSAuthSignInPluginTests: BasePluginTest {
         let clientMetadata = ["somekey": "somevalue"]
         self.mockIdentityProvider = MockIdentityProvider(mockInitiateAuthResponse: { input in
             XCTAssertEqual(clientMetadata, input.clientMetadata)
-            return InitiateAuthOutputResponse(
+            return InitiateAuthOutput(
                 authenticationResult: .none,
                 challengeName: .passwordVerifier,
-                challengeParameters: InitiateAuthOutputResponse.validChalengeParams,
+                challengeParameters: InitiateAuthOutput.validChalengeParams,
                 session: "someSession")
         }, mockRespondToAuthChallengeResponse: { input in
             XCTAssertEqual(clientMetadata, input.clientMetadata)
-            return RespondToAuthChallengeOutputResponse(
+            return RespondToAuthChallengeOutput(
                 authenticationResult: .none,
                 challengeName: .customChallenge,
                 challengeParameters: ["paramKey": "value"],
@@ -363,13 +363,13 @@ class AWSAuthSignInPluginTests: BasePluginTest {
     func testSMSMFAWithAdditionalInfo() async {
 
         self.mockIdentityProvider = MockIdentityProvider(mockInitiateAuthResponse: { _ in
-            InitiateAuthOutputResponse(
+            InitiateAuthOutput(
                 authenticationResult: .none,
                 challengeName: .passwordVerifier,
-                challengeParameters: InitiateAuthOutputResponse.validChalengeParams,
+                challengeParameters: InitiateAuthOutput.validChalengeParams,
                 session: "someSession")
         }, mockRespondToAuthChallengeResponse: { _ in
-            RespondToAuthChallengeOutputResponse(
+            RespondToAuthChallengeOutput(
                 authenticationResult: .none,
                 challengeName: .smsMfa,
                 challengeParameters: ["paramKey": "value"],
@@ -406,13 +406,13 @@ class AWSAuthSignInPluginTests: BasePluginTest {
     func testSignInWithNextStepNewPassword() async {
 
         self.mockIdentityProvider = MockIdentityProvider(mockInitiateAuthResponse: { _ in
-            InitiateAuthOutputResponse(
+            InitiateAuthOutput(
                 authenticationResult: .none,
                 challengeName: .passwordVerifier,
-                challengeParameters: InitiateAuthOutputResponse.validChalengeParams,
+                challengeParameters: InitiateAuthOutput.validChalengeParams,
                 session: "someSession")
         }, mockRespondToAuthChallengeResponse: { _ in
-            RespondToAuthChallengeOutputResponse(
+            RespondToAuthChallengeOutput(
                 authenticationResult: .none,
                 challengeName: .newPasswordRequired,
                 challengeParameters: ["paramKey": "value"],
@@ -445,13 +445,13 @@ class AWSAuthSignInPluginTests: BasePluginTest {
     func testNewPasswordWithAdditionalInfo() async {
 
         self.mockIdentityProvider = MockIdentityProvider(mockInitiateAuthResponse: { _ in
-            InitiateAuthOutputResponse(
+            InitiateAuthOutput(
                 authenticationResult: .none,
                 challengeName: .passwordVerifier,
-                challengeParameters: InitiateAuthOutputResponse.validChalengeParams,
+                challengeParameters: InitiateAuthOutput.validChalengeParams,
                 session: "someSession")
         }, mockRespondToAuthChallengeResponse: { _ in
-            RespondToAuthChallengeOutputResponse(
+            RespondToAuthChallengeOutput(
                 authenticationResult: .none,
                 challengeName: .newPasswordRequired,
                 challengeParameters: ["paramKey": "value"],
@@ -488,13 +488,13 @@ class AWSAuthSignInPluginTests: BasePluginTest {
     func testSignInWithNextStepCustomChallenge() async {
 
         self.mockIdentityProvider = MockIdentityProvider(mockInitiateAuthResponse: { _ in
-            InitiateAuthOutputResponse(
+            InitiateAuthOutput(
                 authenticationResult: .none,
                 challengeName: .passwordVerifier,
-                challengeParameters: InitiateAuthOutputResponse.validChalengeParams,
+                challengeParameters: InitiateAuthOutput.validChalengeParams,
                 session: "someSession")
         }, mockRespondToAuthChallengeResponse: { _ in
-            RespondToAuthChallengeOutputResponse(
+            RespondToAuthChallengeOutput(
                 authenticationResult: .none,
                 challengeName: .customChallenge,
                 challengeParameters: ["paramKey": "value"],
@@ -527,13 +527,13 @@ class AWSAuthSignInPluginTests: BasePluginTest {
     func testSignInWithNextStepUnknown() async {
 
         self.mockIdentityProvider = MockIdentityProvider(mockInitiateAuthResponse: { _ in
-            InitiateAuthOutputResponse(
+            InitiateAuthOutput(
                 authenticationResult: .none,
                 challengeName: .passwordVerifier,
-                challengeParameters: InitiateAuthOutputResponse.validChalengeParams,
+                challengeParameters: InitiateAuthOutput.validChalengeParams,
                 session: "someSession")
         }, mockRespondToAuthChallengeResponse: { _ in
-            RespondToAuthChallengeOutputResponse(
+            RespondToAuthChallengeOutput(
                 authenticationResult: .none,
                 challengeName: .sdkUnknown("no idea"),
                 challengeParameters: ["paramKey": "value"],
@@ -564,13 +564,13 @@ class AWSAuthSignInPluginTests: BasePluginTest {
     func testSignInWithNextDeviceSRP() async {
 
         self.mockIdentityProvider = MockIdentityProvider(mockInitiateAuthResponse: { _ in
-            InitiateAuthOutputResponse(
+            InitiateAuthOutput(
                 authenticationResult: .none,
                 challengeName: .deviceSrpAuth,
-                challengeParameters: InitiateAuthOutputResponse.validChalengeParams,
+                challengeParameters: InitiateAuthOutput.validChalengeParams,
                 session: "someSession")
         }, mockRespondToAuthChallengeResponse: { _ in
-            RespondToAuthChallengeOutputResponse(
+            RespondToAuthChallengeOutput(
                 authenticationResult: .none,
                 challengeName: .devicePasswordVerifier,
                 challengeParameters: ["paramKey": "value"],
@@ -608,13 +608,13 @@ class AWSAuthSignInPluginTests: BasePluginTest {
     func testSignInWithCustomAuthIncorrectCode() async {
 
         self.mockIdentityProvider = MockIdentityProvider(mockInitiateAuthResponse: { _ in
-            InitiateAuthOutputResponse(
+            InitiateAuthOutput(
                 authenticationResult: .none,
                 challengeName: .customChallenge,
-                challengeParameters: InitiateAuthOutputResponse.validChalengeParams,
+                challengeParameters: InitiateAuthOutput.validChalengeParams,
                 session: "someSession")
         }, mockRespondToAuthChallengeResponse: { _ in
-            RespondToAuthChallengeOutputResponse(
+            RespondToAuthChallengeOutput(
                 authenticationResult: .none,
                 challengeName: .smsMfa,
                 challengeParameters: ["paramKey": "value"],
@@ -648,13 +648,13 @@ class AWSAuthSignInPluginTests: BasePluginTest {
     func testSignInWithNextStepTOTP() async {
 
         self.mockIdentityProvider = MockIdentityProvider(mockInitiateAuthResponse: { _ in
-            InitiateAuthOutputResponse(
+            InitiateAuthOutput(
                 authenticationResult: .none,
                 challengeName: .passwordVerifier,
-                challengeParameters: InitiateAuthOutputResponse.validChalengeParams,
+                challengeParameters: InitiateAuthOutput.validChalengeParams,
                 session: "someSession")
         }, mockRespondToAuthChallengeResponse: { _ in
-            RespondToAuthChallengeOutputResponse(
+            RespondToAuthChallengeOutput(
                 authenticationResult: .none,
                 challengeName: .softwareTokenMfa,
                 challengeParameters: ["paramKey": "value"],
@@ -677,13 +677,13 @@ class AWSAuthSignInPluginTests: BasePluginTest {
     func testSignInWithNextStepSelectMFAType() async {
 
         self.mockIdentityProvider = MockIdentityProvider(mockInitiateAuthResponse: { _ in
-            InitiateAuthOutputResponse(
+            InitiateAuthOutput(
                 authenticationResult: .none,
                 challengeName: .passwordVerifier,
-                challengeParameters: InitiateAuthOutputResponse.validChalengeParams,
+                challengeParameters: InitiateAuthOutput.validChalengeParams,
                 session: "someSession")
         }, mockRespondToAuthChallengeResponse: { _ in
-            RespondToAuthChallengeOutputResponse(
+            RespondToAuthChallengeOutput(
                 authenticationResult: .none,
                 challengeName: .selectMfaType,
                 challengeParameters: ["MFAS_CAN_CHOOSE": "[\"SMS_MFA\",\"SOFTWARE_TOKEN_MFA\"]"],
@@ -708,13 +708,13 @@ class AWSAuthSignInPluginTests: BasePluginTest {
     func testSignInWithNextStepSetupMFA() async {
 
         self.mockIdentityProvider = MockIdentityProvider(mockInitiateAuthResponse: { _ in
-            InitiateAuthOutputResponse(
+            InitiateAuthOutput(
                 authenticationResult: .none,
                 challengeName: .passwordVerifier,
-                challengeParameters: InitiateAuthOutputResponse.validChalengeParams,
+                challengeParameters: InitiateAuthOutput.validChalengeParams,
                 session: "someSession")
         }, mockRespondToAuthChallengeResponse: { _ in
-            RespondToAuthChallengeOutputResponse(
+            RespondToAuthChallengeOutput(
                 authenticationResult: .none,
                 challengeName: .mfaSetup,
                 challengeParameters: ["MFAS_CAN_SETUP": "[\"SMS_MFA\",\"SOFTWARE_TOKEN_MFA\"]"],
@@ -741,13 +741,13 @@ class AWSAuthSignInPluginTests: BasePluginTest {
     func testSignInWithNextStepSetupMFAWithUnavailableMFAType() async {
 
         self.mockIdentityProvider = MockIdentityProvider(mockInitiateAuthResponse: { _ in
-            InitiateAuthOutputResponse(
+            InitiateAuthOutput(
                 authenticationResult: .none,
                 challengeName: .passwordVerifier,
-                challengeParameters: InitiateAuthOutputResponse.validChalengeParams,
+                challengeParameters: InitiateAuthOutput.validChalengeParams,
                 session: "someSession")
         }, mockRespondToAuthChallengeResponse: { _ in
-            RespondToAuthChallengeOutputResponse(
+            RespondToAuthChallengeOutput(
                 authenticationResult: .none,
                 challengeName: .mfaSetup,
                 challengeParameters: ["MFAS_CAN_SETUP": "[\"SMS_MFA\"]"],
@@ -783,7 +783,7 @@ class AWSAuthSignInPluginTests: BasePluginTest {
     func testSignInWithInternalErrorException() async {
 
         self.mockIdentityProvider = MockIdentityProvider(mockInitiateAuthResponse: { _ in
-            throw InitiateAuthOutputError.internalErrorException(.init())
+            throw AWSCognitoIdentityProvider.InternalErrorException()
         })
 
         let options = AuthSignInRequest.Options()
@@ -811,7 +811,7 @@ class AWSAuthSignInPluginTests: BasePluginTest {
     func testSignInWithInvalidLambdaResponseException() async {
 
         self.mockIdentityProvider = MockIdentityProvider(mockInitiateAuthResponse: { _ in
-            throw InitiateAuthOutputError.invalidLambdaResponseException(.init())
+            throw AWSCognitoIdentityProvider.InvalidLambdaResponseException()
         })
 
         let options = AuthSignInRequest.Options()
@@ -840,7 +840,7 @@ class AWSAuthSignInPluginTests: BasePluginTest {
     func testSignInWithInvalidParameterException() async {
 
         self.mockIdentityProvider = MockIdentityProvider(mockInitiateAuthResponse: { _ in
-            throw InitiateAuthOutputError.invalidParameterException(.init())
+            throw AWSCognitoIdentityProvider.InvalidParameterException()
         })
 
         let options = AuthSignInRequest.Options()
@@ -869,7 +869,7 @@ class AWSAuthSignInPluginTests: BasePluginTest {
     func testSignInWithInvalidUserPoolConfigurationException() async {
 
         self.mockIdentityProvider = MockIdentityProvider(mockInitiateAuthResponse: { _ in
-            throw InitiateAuthOutputError.invalidUserPoolConfigurationException(.init())
+            throw AWSCognitoIdentityProvider.InvalidUserPoolConfigurationException()
         })
 
         let options = AuthSignInRequest.Options()
@@ -897,7 +897,7 @@ class AWSAuthSignInPluginTests: BasePluginTest {
     func testSignInWithNotAuthorizedException() async {
 
         self.mockIdentityProvider = MockIdentityProvider(mockInitiateAuthResponse: { _ in
-            throw InitiateAuthOutputError.notAuthorizedException(.init())
+            throw AWSCognitoIdentityProvider.NotAuthorizedException()
         })
 
         let options = AuthSignInRequest.Options()
@@ -925,7 +925,7 @@ class AWSAuthSignInPluginTests: BasePluginTest {
     func testSignInWithPasswordResetRequiredException() async {
 
         self.mockIdentityProvider = MockIdentityProvider(mockInitiateAuthResponse: { _ in
-            throw InitiateAuthOutputError.passwordResetRequiredException(.init())
+            throw AWSCognitoIdentityProvider.PasswordResetRequiredException()
         })
 
         let options = AuthSignInRequest.Options()
@@ -954,10 +954,12 @@ class AWSAuthSignInPluginTests: BasePluginTest {
     func testSignInWithPasswordResetRequiredException2() async {
 
         self.mockIdentityProvider = MockIdentityProvider(mockInitiateAuthResponse: { _ in
-            let serviceError = SdkError<InitiateAuthOutputError>
-                .service(.passwordResetRequiredException(PasswordResetRequiredException()),
-                         .init(body: .none, statusCode: .badRequest))
-            throw SdkError<InitiateAuthOutputError>.client(.retryError(serviceError), nil)
+            throw try await AWSCognitoIdentityProvider.PasswordResetRequiredException(
+                httpResponse: .init(body: .empty, statusCode: .badRequest),
+                decoder: nil,
+                message: nil,
+                requestID: nil
+            )
         })
 
         let options = AuthSignInRequest.Options()
@@ -986,7 +988,7 @@ class AWSAuthSignInPluginTests: BasePluginTest {
     func testSignInWithResourceNotFoundException() async {
 
         self.mockIdentityProvider = MockIdentityProvider(mockInitiateAuthResponse: { _ in
-            throw InitiateAuthOutputError.resourceNotFoundException(.init())
+            throw AWSCognitoIdentityProvider.ResourceNotFoundException()
         })
 
         let options = AuthSignInRequest.Options()
@@ -1015,7 +1017,7 @@ class AWSAuthSignInPluginTests: BasePluginTest {
     func testSignInWithTooManyRequestsException() async {
 
         self.mockIdentityProvider = MockIdentityProvider(mockInitiateAuthResponse: { _ in
-            throw InitiateAuthOutputError.tooManyRequestsException(.init())
+            throw AWSCognitoIdentityProvider.TooManyRequestsException()
         })
 
         let options = AuthSignInRequest.Options()
@@ -1044,7 +1046,7 @@ class AWSAuthSignInPluginTests: BasePluginTest {
     func testSignInWithUnexpectedLambdaException() async {
 
         self.mockIdentityProvider = MockIdentityProvider(mockInitiateAuthResponse: { _ in
-            throw InitiateAuthOutputError.unexpectedLambdaException(.init())
+            throw AWSCognitoIdentityProvider.UnexpectedLambdaException()
         })
 
         let options = AuthSignInRequest.Options()
@@ -1073,7 +1075,7 @@ class AWSAuthSignInPluginTests: BasePluginTest {
     func testSignInWithUserLambdaValidationException() async {
 
         self.mockIdentityProvider = MockIdentityProvider(mockInitiateAuthResponse: { _ in
-            throw InitiateAuthOutputError.userLambdaValidationException(.init())
+            throw AWSCognitoIdentityProvider.UserLambdaValidationException()
         })
 
         let options = AuthSignInRequest.Options()
@@ -1101,7 +1103,7 @@ class AWSAuthSignInPluginTests: BasePluginTest {
     ///
     func testSignInWithUserNotConfirmedException() async {
         self.mockIdentityProvider = MockIdentityProvider(mockInitiateAuthResponse: { _ in
-            throw InitiateAuthOutputError.userNotConfirmedException(.init())
+            throw AWSCognitoIdentityProvider.UserNotConfirmedException()
         })
 
         let options = AuthSignInRequest.Options()
@@ -1130,10 +1132,9 @@ class AWSAuthSignInPluginTests: BasePluginTest {
     func testSignInWithUserNotConfirmedException2() async {
 
         self.mockIdentityProvider = MockIdentityProvider(mockInitiateAuthResponse: { _ in
-            let serviceError = SdkError<InitiateAuthOutputError>
-                .service(.userNotConfirmedException(UserNotConfirmedException()),
-                         .init(body: .none, statusCode: .badRequest))
-            throw SdkError<InitiateAuthOutputError>.client(.retryError(serviceError), nil)
+            throw try await AWSCognitoIdentityProvider.UserNotConfirmedException(
+                httpResponse: .init(body: .empty, statusCode: .badRequest)
+            )
         })
 
         let options = AuthSignInRequest.Options()
@@ -1162,7 +1163,7 @@ class AWSAuthSignInPluginTests: BasePluginTest {
     func testSignInWithUserNotFoundException() async {
 
         self.mockIdentityProvider = MockIdentityProvider(mockInitiateAuthResponse: { _ in
-            throw InitiateAuthOutputError.userNotFoundException(.init())
+            throw AWSCognitoIdentityProvider.UserNotFoundException()
         })
 
         let options = AuthSignInRequest.Options()
@@ -1193,13 +1194,13 @@ class AWSAuthSignInPluginTests: BasePluginTest {
     func testSignInWithAliasExistsException() async {
 
         self.mockIdentityProvider = MockIdentityProvider(mockInitiateAuthResponse: { _ in
-            InitiateAuthOutputResponse(
+            InitiateAuthOutput(
                 authenticationResult: .none,
                 challengeName: .passwordVerifier,
-                challengeParameters: InitiateAuthOutputResponse.validChalengeParams,
+                challengeParameters: InitiateAuthOutput.validChalengeParams,
                 session: "someSession")
         }, mockRespondToAuthChallengeResponse: { _ in
-            throw RespondToAuthChallengeOutputError.aliasExistsException(.init())
+            throw AWSCognitoIdentityProvider.AliasExistsException()
         })
 
         let options = AuthSignInRequest.Options()
@@ -1228,13 +1229,13 @@ class AWSAuthSignInPluginTests: BasePluginTest {
     func testSignInWithInvalidPasswordException() async {
 
         self.mockIdentityProvider = MockIdentityProvider(mockInitiateAuthResponse: { _ in
-            InitiateAuthOutputResponse(
+            InitiateAuthOutput(
                 authenticationResult: .none,
                 challengeName: .passwordVerifier,
-                challengeParameters: InitiateAuthOutputResponse.validChalengeParams,
+                challengeParameters: InitiateAuthOutput.validChalengeParams,
                 session: "someSession")
         }, mockRespondToAuthChallengeResponse: { _ in
-            throw RespondToAuthChallengeOutputError.invalidPasswordException(.init())
+            throw AWSCognitoIdentityProvider.InvalidPasswordException()
         })
 
         let options = AuthSignInRequest.Options()
@@ -1262,13 +1263,13 @@ class AWSAuthSignInPluginTests: BasePluginTest {
     func testRestartSignIn() async {
 
         self.mockIdentityProvider = MockIdentityProvider(mockInitiateAuthResponse: { _ in
-            InitiateAuthOutputResponse(
+            InitiateAuthOutput(
                 authenticationResult: .none,
                 challengeName: .passwordVerifier,
-                challengeParameters: InitiateAuthOutputResponse.validChalengeParams,
+                challengeParameters: InitiateAuthOutput.validChalengeParams,
                 session: "someSession")
         }, mockRespondToAuthChallengeResponse: { _ in
-            RespondToAuthChallengeOutputResponse(
+            RespondToAuthChallengeOutput(
                 authenticationResult: .none,
                 challengeName: .smsMfa,
                 challengeParameters: [:],
@@ -1286,13 +1287,13 @@ class AWSAuthSignInPluginTests: BasePluginTest {
             }
             XCTAssertFalse(result.isSignedIn)
             self.mockIdentityProvider = MockIdentityProvider(mockInitiateAuthResponse: { _ in
-                InitiateAuthOutputResponse(
+                InitiateAuthOutput(
                     authenticationResult: .none,
                     challengeName: .passwordVerifier,
-                    challengeParameters: InitiateAuthOutputResponse.validChalengeParams,
+                    challengeParameters: InitiateAuthOutput.validChalengeParams,
                     session: "someSession")
             }, mockRespondToAuthChallengeResponse: { _ in
-                RespondToAuthChallengeOutputResponse(
+                RespondToAuthChallengeOutput(
                     authenticationResult: .init(
                         accessToken: Defaults.validAccessToken,
                         expiresIn: 300,
@@ -1330,20 +1331,22 @@ class AWSAuthSignInPluginTests: BasePluginTest {
 
         self.mockIdentity = MockIdentity(
             mockGetIdResponse: { _ in
-                throw GetIdOutputError.invalidParameterException(.init(message: "Invalid parameter passed"))
+                throw AWSCognitoIdentity.InvalidParameterException(
+                    message: "Invalid parameter passed"
+                )
             },
             mockGetCredentialsResponse: getCredentials)
 
         self.mockIdentityProvider = MockIdentityProvider(mockRevokeTokenResponse: { _ in
-            RevokeTokenOutputResponse()
+            RevokeTokenOutput()
         }, mockInitiateAuthResponse: { _ in
-            InitiateAuthOutputResponse(
+            InitiateAuthOutput(
                 authenticationResult: .none,
                 challengeName: .passwordVerifier,
-                challengeParameters: InitiateAuthOutputResponse.validChalengeParams,
+                challengeParameters: InitiateAuthOutput.validChalengeParams,
                 session: "someSession")
         }, mockRespondToAuthChallengeResponse: { _ in
-            RespondToAuthChallengeOutputResponse(
+            RespondToAuthChallengeOutput(
                 authenticationResult: .init(
                     accessToken: Defaults.validAccessToken,
                     expiresIn: 300,

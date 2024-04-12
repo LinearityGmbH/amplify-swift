@@ -1,5 +1,225 @@
 # Changelog
 
+## 2.29.1 (2024-04-10)
+
+### Bug Fixes
+
+- **api**: add collection type casting in swift 5.7 (#3602)
+- **Auth**: throw correct error for an unknown session error (#3591)
+- **DataStore**: Fixing a crash when attempting to create a model with a predicate. (#3600)
+
+## 2.29.0 (2024-04-03)
+
+### Features
+
+- **API**: implement AppSyncRealTimeClient and WebSocketClient with URLSession (#3575)
+
+### Bug Fixes
+
+- **api**: add user-agent header to appsync websocket handshake request (#3586)
+
+## 2.28.0 (2024-03-21)
+
+### Features
+
+- **Auth**: Adding forceAliasCreation option during confirmSignUp (#3382)
+
+## 2.27.3 (2024-03-18)
+
+### Bug Fixes
+
+- **Logging**: Updating the required reason API usage (#3570)
+
+## 2.27.2 (2024-03-11)
+
+### Bug Fixes
+
+- **DataStore**: created and deleted model on one device appears as created on the other (#3554)
+- **predictions**: Serialize the dispatch of web socket events (#3558)
+
+## 2.27.1 (2024-03-07)
+
+### Bug Fixes
+
+- add collected data types to privacy manifests (#3531)
+- **DataStore**: endless retry of mutation request when server responds with 401 error code (#3511) (#3512)
+- **amplify-xcode**: Fixing errors during amplify pull (#3536)
+
+## 2.27.0 (2024-02-22)
+
+### Features
+
+- Update aws-swift-sdk dependency to 0.36.1 (#3519)
+
+## 2.26.3 (2024-02-21)
+
+### Bug Fixes
+
+- **DataStore**: improve MutationEvent resiliency to interruptions (#3492)
+
+## 2.26.2 (2024-02-15)
+
+### Bug Fixes
+
+- **DataStore**: pass DataStore source for API decoding (#3515)
+- **DataStore**: serialize IncomingAsyncSubscriptionEventPublisher events (#3489)
+
+## 2.26.1 (2024-02-12)
+
+### Bug Fixes
+
+- **build**: update code to build for xcode 15.3 beta 2 (#3506)
+- **Auth**: Device name missing in FetchDevice API (#3508)
+
+## 2.26.0 (2024-02-08)
+
+### Features
+
+- **auth**: Removed dependency on oauth2 token for refreshToken and move to initiateAuth for hostedUI (#3497)
+
+## 2.25.7 (2024-02-07)
+
+### Bug Fixes
+
+- **build**: update code to fix build in xcode 15.3 beta 2 (#3500)
+- **DataStore**: auth plugin requirement for single auth rule (#3453)
+
+## 2.25.6 (2024-01-30)
+
+### Bug Fixes
+
+- **DataStore**: retry MutationEvents on signed-out and token expired errors (#3487)
+
+## 2.25.5 (2024-01-23)
+
+### Bug Fixes
+
+- **ci**: disable minimum build workflow on main branch (#3481)
+- **datastore**: fix syncQuery for partial success-error responses and update retry mechanism for error codes (#3479)
+
+## 2.25.4 (2024-01-15)
+
+### Bug Fixes
+
+- **Auth**: properly redacting session information (#3472)
+- **Auth**: Fix multiple continuation resumes in hostedUI (#3466)
+- **Analytics**: Updating session stop time for cached events. (#3405)
+- **Analytics**: Making PinpointEndpointProfile a struct. (#3457)
+
+## 2.25.3 (2024-01-08)
+
+### Bug Fixes
+
+- **datastore**: update pending mutation events version from mutation response (#3452)
+- **datastore**: sync pending mutation events with latest synced metadata (#3377)
+
+## 2.25.2 (2023-12-27)
+
+### Bug Fixes
+
+- **DataStore**: watchOS subscription disabled configuration value (#3432)
+- use non-failable UTF8View Data init when converting from String (#3430)
+- **DataStore**: Add 'weak self' to prevent retain cycles in OutgoingMutationQueue (#3429)
+
+## 2.25.1 (2023-12-14)
+
+### Bug Fixes
+
+- **datastore**: store time zone info in Temporal.DateTime (#3393)
+- **Auth**: add DefaultLogger conformance to remaining auth task (#3413)
+- **datastore**: observequery local only collect (#3214)
+- **Auth**: Add logging to Amplify Auth tasks (#3365)
+- **datastore**: full sync when sync predicate changes (#2757)
+
+## 2.25.0 (2023-12-08)
+
+### Features
+
+- **Auth**: Rename resendConfirmationCode API for User Attributes to sendVerificationCode (#3384)
+
+## 2.24.0 (2023-12-07)
+
+### Features
+
+- **Auth**: Adding network preferences (#3379)
+
+### Bug Fixes
+
+- **Analytics**: Fixing session duration being reported for non-stopped sessions. (#3403)
+
+## 2.23.0 (2023-12-05)
+
+### Features
+
+- **DataStore**: DisableSubscriptions flag for watchOS (#3368)
+
+## 2.22.1 (2023-12-05)
+
+### Bug Fixes
+
+- appsync-realtime-client 3.1.2 watchOS support (#3395)
+- **storage**: Fixing watchOS crash when dealing with big files (#3389)
+- **DataStore**: Store larger than 32-bit values in Int64 over Int (#3367)
+- **Auth**: Moving HostedUI continuations to one place (#3363)
+- **DataStore**: Reconcile mutation responses from conflict handler path (#3370)
+- **Auth**: Add underlying error details to session error (#3364)
+- refactor keychain errors (#3354)
+
+## 2.22.0 (2023-11-10)
+
+### Features
+
+- update swift sdk dependency to 0.31.0 (#3351)
+
+## 2.21.5 (2023-11-08)
+
+### Bug Fixes
+
+- **datastore**: multi auth rule for read subscription (#3316)
+
+## 2.21.4 (2023-11-02)
+
+### Bug Fixes
+
+- **Analytics**: Fixing crash when attempting to submit events while a previous submission is in progress (#3331)
+
+## 2.21.3 (2023-11-01)
+
+### Bug Fixes
+
+- bump swift sdk to 0.26.1 (#3333)
+
+## 2.21.2 (2023-10-31)
+
+### Bug Fixes
+
+- **Analytics**: Handling certain auth errors as retryable errors (#3322)
+
+## 2.21.1 (2023-10-23)
+
+### Bug Fixes
+
+- **storage**: include user-controlled metadata in upload requests (#3315)
+- **PushNotifications**: Fixing .network error not being correctly reported (#3314)
+
+## 2.21.0 (2023-10-21)
+
+### Features
+
+- **datastore**: Add `isLoaded` public property in List+Model (#3296)
+
+## 2.20.1 (2023-10-19)
+
+### Bug Fixes
+
+- **storage**: add metadata support to uploads (#3295)
+
+## 2.20.0 (2023-10-18)
+
+### Features
+
+- **core**: update swift sdk dependency version to 0.26.0 (#3248)
+
 ## 2.19.0 (2023-09-28)
 
 ### Features

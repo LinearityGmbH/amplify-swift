@@ -35,6 +35,7 @@ extension AWSS3StoragePlugin {
         let result = try await storageService.getPreSignedURL(
             serviceKey: serviceKey,
             signingOperation: .getObject,
+            metadata: nil,
             accelerate: accelerate,
             expires: options.expires)
 
@@ -57,7 +58,7 @@ extension AWSS3StoragePlugin {
                                                           authService: authService)
         let taskAdapter = AmplifyInProcessReportingOperationTaskAdapter(operation: operation)
         queue.addOperation(operation)
-        
+
         return taskAdapter
     }
 
@@ -93,7 +94,7 @@ extension AWSS3StoragePlugin {
                                                         authService: authService)
         let taskAdapter = AmplifyInProcessReportingOperationTaskAdapter(operation: operation)
         queue.addOperation(operation)
-        
+
         return taskAdapter
     }
 
@@ -111,7 +112,7 @@ extension AWSS3StoragePlugin {
                                                         authService: authService)
         let taskAdapter = AmplifyInProcessReportingOperationTaskAdapter(operation: operation)
         queue.addOperation(operation)
-        
+
         return taskAdapter
     }
 
@@ -128,7 +129,7 @@ extension AWSS3StoragePlugin {
                                                     authService: authService)
         let taskAdapter = AmplifyOperationTaskAdapter(operation: operation)
         queue.addOperation(operation)
-        
+
         return try await taskAdapter.value
     }
 

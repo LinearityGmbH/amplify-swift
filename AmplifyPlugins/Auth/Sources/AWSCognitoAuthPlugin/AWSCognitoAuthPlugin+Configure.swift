@@ -12,7 +12,9 @@ import AWSCognitoIdentity
 import AWSCognitoIdentityProvider
 import AWSPluginsCore
 import ClientRuntime
-@_spi(FoundationClientEngine) import AWSPluginsCore
+import AWSClientRuntime
+@_spi(PluginHTTPClientEngine) import AWSPluginsCore
+@_spi(InternalHttpEngineProxy) import AWSPluginsCore
 
 extension AWSCognitoAuthPlugin {
 
@@ -87,29 +89,25 @@ extension AWSCognitoAuthPlugin {
         switch authConfiguration {
         case .userPools(let userPoolConfig), .userPoolsAndIdentityPools(let userPoolConfig, _):
             let configuration = try CognitoIdentityProviderClient.CognitoIdentityProviderClientConfiguration(
-                endpointResolver: userPoolConfig.endpoint?.resolver,
-                frameworkMetadata: AmplifyAWSServiceConfiguration.frameworkMetaData(),
-                region: userPoolConfig.region
+                region: userPoolConfig.region,
+                serviceSpecific: .init(endpointResolver: userPoolConfig.endpoint?.resolver)
             )
 
             if var httpClientEngineProxy = httpClientEngineProxy {
-                let httpClientEngine: HttpClientEngine
-                #if os(iOS) || os(macOS)
-                // networking goes through CRT
-                httpClientEngine = configuration.httpClientEngine
-                #else
-                // networking goes through Foundation
-                httpClientEngine = FoundationClientEngine()
-                #endif
-                httpClientEngineProxy.target = httpClientEngine
-                configuration.httpClientEngine = httpClientEngineProxy
+                httpClientEngineProxy.target = baseClientEngine(for: configuration)
+                configuration.httpClientEngine = UserAgentSettingClientEngine(
+                    target: httpClientEngineProxy
+                )
             } else {
-                #if os(iOS) || os(macOS) // no-op
-                #else
-                // For any platform except iOS or macOS
-                // Use Foundation instead of CRT for networking.
-                configuration.httpClientEngine = FoundationClientEngine()
-                #endif
+                configuration.httpClientEngine = .userAgentEngine(for: configuration)
+            }
+
+            if let requestTimeout = networkPreferences?.timeoutIntervalForRequest {
+                configuration.httpClientConfiguration = HttpClientConfiguration(connectTimeout: requestTimeout)
+            }
+
+            if let maxRetryUnwrapped = networkPreferences?.maxRetryCount {
+                configuration.retryStrategyOptions = RetryStrategyOptions(maxRetriesBase: Int(maxRetryUnwrapped))
             }
 
             return CognitoIdentityProviderClient(config: configuration)
@@ -122,16 +120,17 @@ extension AWSCognitoAuthPlugin {
         switch authConfiguration {
         case .identityPools(let identityPoolConfig), .userPoolsAndIdentityPools(_, let identityPoolConfig):
             let configuration = try CognitoIdentityClient.CognitoIdentityClientConfiguration(
-                frameworkMetadata: AmplifyAWSServiceConfiguration.frameworkMetaData(),
                 region: identityPoolConfig.region
             )
+            configuration.httpClientEngine = .userAgentEngine(for: configuration)
 
-            #if os(iOS) || os(macOS) // no-op
-            #else
-            // For any platform except iOS or macOS
-            // Use Foundation instead of CRT for networking.
-            configuration.httpClientEngine = FoundationClientEngine()
-            #endif
+            if let requestTimeout = networkPreferences?.timeoutIntervalForRequest {
+                configuration.httpClientConfiguration = HttpClientConfiguration(connectTimeout: requestTimeout)
+            }
+
+            if let maxRetryUnwrapped = networkPreferences?.maxRetryCount {
+                configuration.retryStrategyOptions = RetryStrategyOptions(maxRetriesBase: Int(maxRetryUnwrapped))
+            }
 
             return CognitoIdentityClient(config: configuration)
         default:
@@ -146,6 +145,15 @@ extension AWSCognitoAuthPlugin {
     private func makeURLSession() -> URLSession {
         let configuration = URLSessionConfiguration.default
         configuration.urlCache = nil
+
+        if let timeoutIntervalForRequest = networkPreferences?.timeoutIntervalForRequest {
+            configuration.timeoutIntervalForRequest = timeoutIntervalForRequest
+        }
+
+        if let timeoutIntervalForResource = networkPreferences?.timeoutIntervalForResource {
+            configuration.timeoutIntervalForResource = timeoutIntervalForResource
+        }
+
         return URLSession(configuration: configuration)
     }
 
