@@ -6,13 +6,13 @@
 //
 
 import Foundation
-#if os(iOS) || os(macOS)
+#if os(iOS) || os(macOS) || os(visionOS)
 import AuthenticationServices
 public typealias AuthUIPresentationAnchor = ASPresentationAnchor
 #endif
 
 /// Behavior of the Auth category that clients will use
-public protocol AuthCategoryBehavior: AuthCategoryUserBehavior, AuthCategoryDeviceBehavior {
+public protocol AuthCategoryBehavior: AuthCategoryUserBehavior, AuthCategoryDeviceBehavior, AuthCategoryWebAuthnBehaviour {
 
     /// SignUp a user with the authentication provider.
     ///
@@ -66,7 +66,7 @@ public protocol AuthCategoryBehavior: AuthCategoryUserBehavior, AuthCategoryDevi
                 password: String?,
                 options: AuthSignInRequest.Options?) async throws -> AuthSignInResult
 
-#if os(iOS) || os(macOS)
+#if os(iOS) || os(macOS) || os(visionOS)
     /// SignIn using pre configured web UI.
     ///
     /// Calling this method will always launch the Auth plugin's default web user interface
@@ -102,6 +102,10 @@ public protocol AuthCategoryBehavior: AuthCategoryUserBehavior, AuthCategoryDevi
         options: AuthConfirmSignInRequest.Options?
     ) async throws -> AuthSignInResult
 
+    
+    /// Auto signs in the user for passwordless sign up
+    func autoSignIn() async throws -> AuthSignInResult
+    
     /// Sign out the currently logged-in user.
     ///
     /// - Parameters:

@@ -6,13 +6,13 @@
 //
 
 import AWSPluginsCore
-@_spi(PluginHTTPClientEngine) import AWSPluginsCore
+@_spi(PluginHTTPClientEngine) import InternalAmplifyCredentials
 import Amplify
 import Combine
 import Foundation
 import AWSCloudWatchLogs
-import AWSClientRuntime
 import Network
+import SmithyIdentity
 
 /// Responsible for setting up and tearing-down log sessions for a given category/tag according to changes in
 /// user authentication sessions.
@@ -25,7 +25,7 @@ final class AWSCloudWatchLoggingSessionController {
     private let logGroupName: String
     private let region: String
     private let localStoreMaxSizeInMB: Int
-    private let credentialsProvider: CredentialsProviding
+    private let credentialIdentityResolver: any AWSCredentialIdentityResolver
     private let authentication: AuthCategoryUserBehavior
     private let category: String
     private var session: AWSCloudWatchLoggingSession?
@@ -59,7 +59,7 @@ final class AWSCloudWatchLoggingSessionController {
     }
 
     /// - Tag: CloudWatchLogSessionController.init
-    init(credentialsProvider: CredentialsProviding,
+    init(credentialIdentityResolver: some AWSCredentialIdentityResolver,
          authentication: AuthCategoryUserBehavior,
          logFilter: AWSCloudWatchLoggingFilterBehavior,
          category: String,
@@ -71,7 +71,7 @@ final class AWSCloudWatchLoggingSessionController {
          userIdentifier: String?,
          networkMonitor: LoggingNetworkMonitor
     ) {
-        self.credentialsProvider = credentialsProvider
+        self.credentialIdentityResolver = credentialIdentityResolver
         self.authentication = authentication
         self.logFilter = logFilter
         self.category = category
@@ -103,10 +103,10 @@ final class AWSCloudWatchLoggingSessionController {
 
     private func createConsumer() throws -> LogBatchConsumer? {
         if self.client == nil {
-            // TODO: FrameworkMetadata Replacement
             let configuration = try CloudWatchLogsClient.CloudWatchLogsClientConfiguration(
+                awsCredentialIdentityResolver: credentialIdentityResolver,
                 region: region,
-                credentialsProvider: credentialsProvider
+                signingRegion: region
             )
 
             configuration.httpClientEngine = .userAgentEngine(for: configuration)
@@ -115,9 +115,10 @@ final class AWSCloudWatchLoggingSessionController {
         }
 
         guard let cloudWatchClient = client else { return nil }
-        return try CloudWatchLoggingConsumer(client: cloudWatchClient,
-                                             logGroupName: self.logGroupName,
-                                             userIdentifier: self.userIdentifier)
+        return CloudWatchLoggingConsumer(
+            client: cloudWatchClient,
+            logGroupName: self.logGroupName,
+            userIdentifier: self.userIdentifier)
     }
 
     private func connectProducerAndConsumer() {
@@ -131,14 +132,19 @@ final class AWSCloudWatchLoggingSessionController {
         }
         self.batchSubscription = producer.logBatchPublisher.sink { [weak self] batch in
             guard self?.networkMonitor.isOnline == true else { return }
+            
+            // Capture strong references to consumer and batch before the async task
+            let strongConsumer = consumer
+            let strongBatch = batch
+            
             Task {
                 do {
-                    try await consumer.consume(batch: batch)
+                    try await strongConsumer.consume(batch: strongBatch)
                 } catch {
                     Amplify.Logging.default.error("Error flushing logs with error \(error.localizedDescription)")
                     let payload = HubPayload(eventName: HubPayload.EventName.Logging.flushLogFailure, context: error.localizedDescription)
                     Amplify.Hub.dispatch(to: HubChannel.logging, payload: payload)
-                    try batch.complete()
+                    try strongBatch.complete()
                 }
             }
         }
@@ -177,8 +183,15 @@ final class AWSCloudWatchLoggingSessionController {
     }
 
     private func consumeLogBatch(_ batch: LogBatch) async throws {
+        // Check if consumer exists before trying to use it
+        guard let consumer = self.consumer else {
+            // If consumer is nil, still mark the batch as completed to prevent memory leaks
+            try batch.complete()
+            return
+        }
+        
         do {
-            try await consumer?.consume(batch: batch)
+            try await consumer.consume(batch: batch)
         } catch {
             Amplify.Logging.default.error("Error flushing logs with error \(error.localizedDescription)")
             let payload = HubPayload(eventName: HubPayload.EventName.Logging.flushLogFailure, context: error.localizedDescription)

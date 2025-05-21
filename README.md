@@ -3,7 +3,7 @@
 
 AWS Amplify provides a declarative and easy-to-use interface across different categories of cloud operations. Our default implementation works with Amazon Web Services (AWS), but AWS Amplify is designed to be open and pluggable for any custom backend or service.
 
-The Amplify Library for Swift is layered on the [AWS SDK for Swift](https://aws.amazon.com/sdk-for-swift/), which was released as Developer Preview last year. This allows for access to the AWS SDK for Swift for a breadth of service-centric APIs.
+The Amplify Library for Swift is layered on the [AWS SDK for Swift](https://aws.amazon.com/sdk-for-swift/). This allows for access to the AWS SDK for Swift for a breadth of service-centric APIs.
 
 [**API Documentation**](https://aws-amplify.github.io/amplify-swift/docs/)
 
@@ -35,8 +35,12 @@ The Amplify Library for Swift is layered on the [AWS SDK for Swift](https://aws.
 | watchOS   | 9+        | GA            |
 | visionOS  | 1+        | Preview*      |
 
-> To use Amplify Swift with visionOS, you'll need to target the `visionos-preview` branch.
-> For more information, see [Platform Support](https://github.com/aws-amplify/amplify-swift/tree/visionos-preview#platform-support) on the `visionos-preview` branch.
+### Swift Version Support
+
+The current minimum supported Swift language version is **Swift 5.9**.
+
+> [!NOTE]
+> The minimum Swift language version supported by Amplify Swift matches the version included in the minimum Xcode version allowed by Apple to upload apps to App Store Connect. Historically, Apple updates the minimum allowed Xcode version in April each year. You can expect Amplify Swift to update the minimum supported Swift version within the following 60 days. This is done to ensure Amplify Swift can provide modern Swift APIs and take advantage of Swift language improvements.
 
 ## Semantic versioning
 
@@ -49,21 +53,17 @@ of the library.
 
 Applications that evaluate all members of an enumeration using a `switch` statement can add a `default` case to prevent new cases from causing compile warnings or errors.
 
+#### Semantic versioning and dependencies update
+
+We follow [semantic versioning for updating our dependencies](https://semver.org/#what-should-i-do-if-i-update-my-own-dependencies-without-changing-the-public-api).
+
 ## License
 
-This library is licensed under the Apache 2.0 License. 
+This library is licensed under the Apache 2.0 License.
 
 ## Installation
 
-Amplify requires the following Xcode versions, according to the targeted platform:
-
-| Platform      | Xcode Version |
-| -------------:| ------------: |
-| iOS           | 14.1+         |
-| macOS         | 14.1+         |
-| tvOS          | 14.3+         |
-| watchOS       | 14.3+         |
-| visionOS      | 15 beta 2+    |
+Amplify requires Xcode 15.0 or later for all the supported platforms.
 
 | For more detailed instructions, follow the getting started guides in our [documentation site](https://docs.amplify.aws/lib/q/platform/ios)   |
 |-------------------------------------------------|
@@ -133,7 +133,7 @@ Amplify requires the following Xcode versions, according to the targeted platfor
 
 ## Escape Hatch
 
-All services and features not listed in the [**Features/API sectios**](#featuresapis) are supported via the [Swift SDK](https://github.com/awslabs/aws-sdk-swift) or if supported by a category can be accessed via the Escape Hatch like below:
+All services and features not listed in the [**Features/API sections**](#featuresapis) are supported via the [Swift SDK](https://github.com/awslabs/aws-sdk-swift) or if supported by a category can be accessed via the Escape Hatch like below:
 
 ```swift
 import Amplify

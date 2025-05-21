@@ -27,6 +27,7 @@
 		6875F91E2A3CCCB7001C9AAF /* testImageLabels.jpg in Resources */ = {isa = PBXBuildFile; fileRef = 9054235F291425630000D108 /* testImageLabels.jpg */; };
 		6875F91F2A3CCCB7001C9AAF /* testImageEntities.jpg in Resources */ = {isa = PBXBuildFile; fileRef = 90542362291425630000D108 /* testImageEntities.jpg */; };
 		6875F9202A3CCCB7001C9AAF /* testImageTextAll.jpg in Resources */ = {isa = PBXBuildFile; fileRef = 90542361291425630000D108 /* testImageTextAll.jpg */; };
+		68C1547A2BE2B11A003C4CF8 /* CoreMLPredictionsPlugin in Frameworks */ = {isa = PBXBuildFile; productRef = 68C154792BE2B11A003C4CF8 /* CoreMLPredictionsPlugin */; };
 		902830062914027000897087 /* PredictionsHostAppApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 902830052914027000897087 /* PredictionsHostAppApp.swift */; };
 		902830082914027000897087 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 902830072914027000897087 /* ContentView.swift */; };
 		9028300A2914027100897087 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 902830092914027100897087 /* Assets.xcassets */; };
@@ -127,6 +128,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				68C1547A2BE2B11A003C4CF8 /* CoreMLPredictionsPlugin in Frameworks */,
 				681D7D8B2A42710F00F7C310 /* Amplify in Frameworks */,
 				681D7D8F2A42710F00F7C310 /* AWSPredictionsPlugin in Frameworks */,
 				681D7D8D2A42710F00F7C310 /* AWSCognitoAuthPlugin in Frameworks */,
@@ -316,6 +318,7 @@
 				681D7D8A2A42710F00F7C310 /* Amplify */,
 				681D7D8C2A42710F00F7C310 /* AWSCognitoAuthPlugin */,
 				681D7D8E2A42710F00F7C310 /* AWSPredictionsPlugin */,
+				68C154792BE2B11A003C4CF8 /* CoreMLPredictionsPlugin */,
 			);
 			productName = "NewApp Watch App";
 			productReference = 6875F8F02A3CCC84001C9AAF /* PredictionsWatchApp.app */;
@@ -885,7 +888,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"PredictionsHostApp/Preview Content\"";
-				DEVELOPMENT_TEAM = G3Q4R66M4R;
+				DEVELOPMENT_TEAM = "";
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -902,12 +905,13 @@
 				OTHER_LDFLAGS = "";
 				PRODUCT_BUNDLE_IDENTIFIER = io.coffee.PredictionsHostApp;
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				SUPPORTED_PLATFORMS = "appletvos appletvsimulator iphoneos iphonesimulator";
+				SUPPORTED_PLATFORMS = "appletvos appletvsimulator iphoneos iphonesimulator xros xrsimulator";
 				SUPPORTS_MACCATALYST = NO;
-				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = YES;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2,3";
+				TARGETED_DEVICE_FAMILY = "1,2,3,7";
 			};
 			name = Debug;
 		};
@@ -920,7 +924,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"PredictionsHostApp/Preview Content\"";
-				DEVELOPMENT_TEAM = G3Q4R66M4R;
+				DEVELOPMENT_TEAM = "";
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -937,12 +941,13 @@
 				OTHER_LDFLAGS = "";
 				PRODUCT_BUNDLE_IDENTIFIER = io.coffee.PredictionsHostApp;
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				SUPPORTED_PLATFORMS = "appletvos appletvsimulator iphoneos iphonesimulator";
+				SUPPORTED_PLATFORMS = "appletvos appletvsimulator iphoneos iphonesimulator xros xrsimulator";
 				SUPPORTS_MACCATALYST = NO;
-				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = YES;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2,3";
+				TARGETED_DEVICE_FAMILY = "1,2,3,7";
 			};
 			name = Release;
 		};
@@ -965,14 +970,15 @@
 				OTHER_LDFLAGS = "";
 				PRODUCT_BUNDLE_IDENTIFIER = io.coffee.CoreMLPredictionsPluginIntegrationTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				SUPPORTED_PLATFORMS = "appletvos appletvsimulator iphoneos iphonesimulator";
+				SUPPORTED_PLATFORMS = "appletvos appletvsimulator iphoneos iphonesimulator xros xrsimulator";
 				SUPPORTS_MACCATALYST = YES;
-				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = YES;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_OBJC_BRIDGING_HEADER = "";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2,3";
+				TARGETED_DEVICE_FAMILY = "1,2,3,7";
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/PredictionsHostApp.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/PredictionsHostApp";
 			};
 			name = Debug;
@@ -996,13 +1002,14 @@
 				OTHER_LDFLAGS = "";
 				PRODUCT_BUNDLE_IDENTIFIER = io.coffee.CoreMLPredictionsPluginIntegrationTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				SUPPORTED_PLATFORMS = "appletvos appletvsimulator iphoneos iphonesimulator";
+				SUPPORTED_PLATFORMS = "appletvos appletvsimulator iphoneos iphonesimulator xros xrsimulator";
 				SUPPORTS_MACCATALYST = YES;
-				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = YES;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_OBJC_BRIDGING_HEADER = "";
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2,3";
+				TARGETED_DEVICE_FAMILY = "1,2,3,7";
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/PredictionsHostApp.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/PredictionsHostApp";
 			};
 			name = Release;
@@ -1026,14 +1033,15 @@
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = io.coffee.AWSPredictionsPluginIntegrationTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				SUPPORTED_PLATFORMS = "appletvos appletvsimulator iphoneos iphonesimulator";
+				SUPPORTED_PLATFORMS = "appletvos appletvsimulator iphoneos iphonesimulator xros xrsimulator";
 				SUPPORTS_MACCATALYST = YES;
-				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = YES;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_OBJC_BRIDGING_HEADER = "";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2,3";
+				TARGETED_DEVICE_FAMILY = "1,2,3,7";
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/PredictionsHostApp.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/PredictionsHostApp";
 			};
 			name = Debug;
@@ -1057,13 +1065,14 @@
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = io.coffee.AWSPredictionsPluginIntegrationTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				SUPPORTED_PLATFORMS = "appletvos appletvsimulator iphoneos iphonesimulator";
+				SUPPORTED_PLATFORMS = "appletvos appletvsimulator iphoneos iphonesimulator xros xrsimulator";
 				SUPPORTS_MACCATALYST = YES;
-				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = YES;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_OBJC_BRIDGING_HEADER = "";
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2,3";
+				TARGETED_DEVICE_FAMILY = "1,2,3,7";
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/PredictionsHostApp.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/PredictionsHostApp";
 			};
 			name = Release;
@@ -1139,6 +1148,10 @@
 		681D7D8E2A42710F00F7C310 /* AWSPredictionsPlugin */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = AWSPredictionsPlugin;
+		};
+		68C154792BE2B11A003C4CF8 /* CoreMLPredictionsPlugin */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = CoreMLPredictionsPlugin;
 		};
 		9028304B2914042800897087 /* Amplify */ = {
 			isa = XCSwiftPackageProductDependency;

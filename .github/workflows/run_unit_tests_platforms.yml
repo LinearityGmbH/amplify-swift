@@ -21,6 +21,10 @@ on:
         required: false
         type: string
         default: '-test-iterations 3 -retry-tests-on-failure'
+      os-runner:
+        description: 'runs-on input'
+        type: string
+        default: 'macos-15'
 
 permissions:
     contents: read
@@ -31,12 +35,13 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        platform: [iOS, macOS, tvOS, watchOS]
+        platform: [iOS, macOS, tvOS, watchOS, visionOS]
         exclude:
           - platform: ${{ github.event.inputs.ios == 'false' && 'iOS' || 'None' }}
           - platform: ${{ github.event.inputs.macos == 'false' && 'macOS' || 'None' }}
           - platform: ${{ github.event.inputs.tvos == 'false' && 'tvOS' || 'None' }}
           - platform: ${{ github.event.inputs.watchos == 'false' && 'watchOS' || 'None' }}
+          - platform: ${{ github.event.inputs.visionos == 'false' && 'visionOS' || 'None' }}
     uses: ./.github/workflows/run_unit_tests.yml
     with:
       scheme: ${{ inputs.scheme }}
@@ -44,3 +49,4 @@ jobs:
       generate_coverage_report: ${{ github.event_name != 'workflow_dispatch' && matrix.platform == 'iOS' && inputs.generate_coverage_report }}
       timeout-minutes: ${{ inputs.timeout-minutes }}
       test_iterations_flags: ${{ inputs.test_iterations_flags }}
+      os-runner: ${{ inputs.os-runner }}

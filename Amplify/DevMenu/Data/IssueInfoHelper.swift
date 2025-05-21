@@ -5,10 +5,11 @@
 // SPDX-License-Identifier: Apache-2.0
 //
 
-#if os(iOS)
+#if os(iOS) || os(visionOS)
 import Foundation
 
 /// Helper class to generate markdown text for issue reporting
+@MainActor
 struct IssueInfoHelper {
 
     private static let issueDescTitle = "Issue Description"

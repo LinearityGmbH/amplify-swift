@@ -6,18 +6,20 @@
 //
 
 import XCTest
-@testable import Amplify
+@_spi(InternalAmplifyConfiguration) @testable import Amplify
 import AWSCognitoAuthPlugin
+
+fileprivate let internalTestDomain = "@amplify-swift-gamma.awsapps.com"
 
 class AWSAuthBaseTest: XCTestCase {
 
     let networkTimeout = TimeInterval(5)
 
-    var defaultTestEmail = "test-\(UUID().uuidString)@amazon.com"
+    var defaultTestEmail = "test-\(UUID().uuidString)\(internalTestDomain)"
     var defaultTestPassword = UUID().uuidString
 
     var randomEmail: String {
-        "test-\(UUID().uuidString)@amazon.com"
+        "test-\(UUID().uuidString)\(internalTestDomain)"
     }
 
     var randomPhoneNumber: String {
@@ -27,10 +29,23 @@ class AWSAuthBaseTest: XCTestCase {
     }
 
     var amplifyConfigurationFile = "testconfiguration/AWSCognitoAuthPluginIntegrationTests-amplifyconfiguration"
+    var amplifyOutputsFile =
+        "testconfiguration/AWSCognitoAuthPluginIntegrationTests-amplify_outputs"
     let credentialsFile = "testconfiguration/AWSCognitoAuthPluginIntegrationTests-credentials"
+    let keychainAccessGroup = "94KV3E626L.com.aws.amplify.auth.AuthHostAppShared"
+    let keychainAccessGroup2 = "94KV3E626L.com.aws.amplify.auth.AuthHostAppShared2"
+    let keychainAccessGroupWatch = "W3DRXD72QU.com.amazon.aws.amplify.swift.AuthWatchAppShared"
+    let keychainAccessGroupWatch2 = "W3DRXD72QU.com.amazon.aws.amplify.swift.AuthWatchAppShared2"
 
     var amplifyConfiguration: AmplifyConfiguration!
-    
+    var amplifyOutputs: AmplifyOutputsData!
+
+    var onlyUseGen2Configuration = false
+
+    var useGen2Configuration: Bool {
+        ProcessInfo.processInfo.arguments.contains("GEN2") || onlyUseGen2Configuration
+    }
+
     override func setUp() async throws {
         try await super.setUp()
         initializeAmplify()
@@ -39,21 +54,28 @@ class AWSAuthBaseTest: XCTestCase {
     
     override func tearDown() async throws {
         try await super.tearDown()
+        subscription?.cancel()
+        usernameOTPDictionary = [:]
         await Amplify.reset()
     }
 
     func initializeAmplify() {
         do {
-            let configuration = try TestConfigHelper.retrieveAmplifyConfiguration(
-                forResource: amplifyConfigurationFile)
-            amplifyConfiguration = configuration
-
             let credentialsConfiguration = (try? TestConfigHelper.retrieveCredentials(forResource: credentialsFile)) ?? [:]
             defaultTestEmail = credentialsConfiguration["test_email_1"] ?? defaultTestEmail
             defaultTestPassword = credentialsConfiguration["password"] ?? defaultTestPassword
             let authPlugin = AWSCognitoAuthPlugin()
             try Amplify.add(plugin: authPlugin)
-            try Amplify.configure(configuration)
+
+            if useGen2Configuration {
+                let data = try TestConfigHelper.retrieve(forResource: amplifyOutputsFile)
+                try Amplify.configure(with: .data(data))
+            } else {
+                let configuration = try TestConfigHelper.retrieveAmplifyConfiguration(
+                    forResource: amplifyConfigurationFile)
+                amplifyConfiguration = configuration
+                try Amplify.configure(amplifyConfiguration)
+            }
             Amplify.Logging.logLevel = .verbose
             print("Amplify configured with auth plugin")
         } catch {
@@ -101,12 +123,106 @@ class AWSAuthBaseTest: XCTestCase {
             XCTFail("Amplify configuration failed")
         }
     }
+
+    // Dictionary to store OTP with usernames as keys
+    var usernameOTPDictionary: [String: String] = [:]
+    var subscription: AmplifyAsyncThrowingSequence<GraphQLSubscriptionEvent<[String: JSONValue]>>? = nil
+
+    let document: String = """
+    subscription OnCreateMfaInfo {
+        onCreateMfaInfo {
+          username
+          code
+          expirationTime
+        }
+    }
+    """
+
+    /// Function to create a subscription and store OTP codes in a dictionary
+    func subscribeToOTPCreation() async {
+        subscription = Amplify.API.subscribe(request: .init(document: document, responseType: [String: JSONValue].self))
+
+        func waitForSubscriptionConnection(
+            subscription: AmplifyAsyncThrowingSequence<GraphQLSubscriptionEvent<[String: JSONValue]>>
+        ) async throws {
+            for try await subscriptionEvent in subscription {
+                if case .connection(let subscriptionConnectionState) = subscriptionEvent {
+                    print("Subscription connect state is \(subscriptionConnectionState)")
+                    if subscriptionConnectionState == .connected {
+                        return
+                    }
+                }
+            }
+        }
+
+        guard let subscription = subscription else { return }
+
+        await wait(name: "Subscription Connection Waiter", timeout: 5.0) {
+            try await waitForSubscriptionConnection(subscription: subscription)
+        }
+
+        // Create the subscription and listen for OTP code events
+        Task {
+            do {
+                for try await subscriptionEvent in subscription {
+                    switch subscriptionEvent {
+                    case .connection(let subscriptionConnectionState):
+                        print("Subscription connect state is \(subscriptionConnectionState)")
+                    case .data(let result):
+                        switch result {
+                        case .success(let otpResult):
+                            print("Successfully got OTP code from subscription: \(otpResult)")
+                            if let eventUsername = otpResult["onCreateMfaInfo"]?.asObject?["username"]?.stringValue,
+                               let code = otpResult["onCreateMfaInfo"]?.asObject?["code"]?.stringValue {
+                                // Store the code in the dictionary for the given username
+                                usernameOTPDictionary[eventUsername.lowercased()] = code
+                            }
+                        case .failure(let error):
+                            print("Got failed result with \(error.errorDescription)")
+                        }
+                    }
+                }
+            } catch {
+                print("Subscription terminated with error: \(error)")
+            }
+        }
+    }
+
+    /// Test that waits for the OTP code using XCTestExpectation
+    func otp(for username: String) async throws -> String? {
+        let lowerCasedUsername = username.lowercased()
+        let expectation = XCTestExpectation(description: "Wait for OTP")
+        expectation.expectedFulfillmentCount = 1
+        
+        let task = Task { () -> String? in
+            var code: String?
+            for _ in 0..<30 { // Poll for the code, max 30 times (once per second)
+                if let otp = usernameOTPDictionary[lowerCasedUsername] {
+                    code = otp
+                    expectation.fulfill() // Fulfill the expectation when the value is found
+                    break
+                }
+                try await Task.sleep(nanoseconds: 1_000_000_000) // Sleep for 1 second
+            }
+            return code
+        }
+
+        // Wait for expectation or timeout after 30 seconds
+        let result = await XCTWaiter.fulfillment(of: [expectation], timeout: 30)
+
+        if result == .timedOut {
+            // Task cancels if timed out
+            task.cancel()
+            return nil
+        }
+        usernameOTPDictionary.removeValue(forKey: lowerCasedUsername)
+        return try await task.value
+    }
 }
 
 class TestConfigHelper {
 
     static func retrieveAmplifyConfiguration(forResource: String) throws -> AmplifyConfiguration {
-
         let data = try retrieve(forResource: forResource)
         return try AmplifyConfiguration.decodeAmplifyConfiguration(from: data)
     }
@@ -122,7 +238,7 @@ class TestConfigHelper {
         return json
     }
 
-    private static func retrieve(forResource: String) throws -> Data {
+    static func retrieve(forResource: String) throws -> Data {
         guard let path = Bundle(for: self).path(forResource: forResource, ofType: "json") else {
             throw TestConfigError.bundlePathError("Could not retrieve configuration file: \(forResource)")
         }

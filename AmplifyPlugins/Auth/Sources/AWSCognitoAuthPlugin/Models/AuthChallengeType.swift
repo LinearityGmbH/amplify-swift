@@ -16,23 +16,33 @@ enum AuthChallengeType {
 
     case newPasswordRequired
 
+    case passwordRequired
+
     case totpMFA
 
     case selectMFAType
 
     case setUpMFA
 
+    case smsOTP
+
+    case emailOTP
+
+    case selectAuthFactor
+
     case unknown(CognitoIdentityProviderClientTypes.ChallengeNameType)
 
 }
 
-extension CognitoIdentityProviderClientTypes.ChallengeNameType {
+extension CognitoIdentityProviderClientTypes.ChallengeNameType: Codable {
     var authChallengeType: AuthChallengeType {
         switch self {
         case .customChallenge:
             return .customChallenge
         case .newPasswordRequired:
             return .newPasswordRequired
+        case .password, .passwordSrp:
+            return .passwordRequired
         case .smsMfa:
             return .smsMfa
         case .softwareTokenMfa:
@@ -41,6 +51,14 @@ extension CognitoIdentityProviderClientTypes.ChallengeNameType {
             return .selectMFAType
         case .mfaSetup:
             return .setUpMFA
+        case .emailOtp:
+            return .emailOTP
+        case .smsOtp:
+            return .smsOTP
+        case .selectChallenge:
+            return .selectAuthFactor
+        case .webAuthn:
+            fatalError("implement me!")
         default:
             return .unknown(self)
         }

@@ -4,7 +4,7 @@ on:
     inputs:
       os-runner:
         type: string
-        default: 'macos-13'
+        default: 'macos-15'
       scheme:
         description: 'The scheme to run the tests'
         required: true
@@ -17,7 +17,7 @@ on:
         required: false
         type: string
       xcode_version:
-        description: 'The verion of Xcode used to run these tests'
+        description: 'The version of Xcode used to run these tests'
         default: 'latest'
         type: string
       destination:
@@ -73,7 +73,7 @@ jobs:
         id: dependencies-cache
         timeout-minutes: 4
         continue-on-error: true
-        uses: actions/cache/restore@88522ab9f39a2ea568f7027eddc7d8d8bc9d59c8 # v3.3.1
+        uses: actions/cache/restore@1bd1e32a3bdc45362d1e726936510720a7c30a57 # v4.2.0
         with:
           path: ~/Library/Developer/Xcode/DerivedData/Amplify
           key: amplify-packages-${{ hashFiles('Package.resolved') }}
@@ -82,9 +82,10 @@ jobs:
 
       - name: Attempt to restore the build cache
         id: build-cache
+        if: steps.dependencies-cache.outputs.cache-hit
         timeout-minutes: 4
         continue-on-error: true
-        uses: actions/cache/restore@88522ab9f39a2ea568f7027eddc7d8d8bc9d59c8 # v3.3.1
+        uses: actions/cache/restore@1bd1e32a3bdc45362d1e726936510720a7c30a57 # v4.2.0
         with:
           path: ${{ github.workspace }}/Build
           key: Amplify-${{ inputs.platform }}-build-cache

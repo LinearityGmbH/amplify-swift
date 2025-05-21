@@ -22,6 +22,11 @@ on:
         required: true
         default: true
         type: boolean
+      webauthn-ios:
+        description: '🔐 WebAuthn iOS'
+        required: true
+        default: true
+        type: boolean
   workflow_call:
 
 permissions:
@@ -57,4 +62,10 @@ jobs:
       project_path: ./AmplifyPlugins/Auth/Tests/AuthHostedUIApp/
       resource_subfolder: auth
       timeout-minutes: 30
+    secrets: inherit
+
+  auth-webauthn-integration-test-iOS:
+    if: ${{ inputs.webauthn-ios != 'false' }}
+    name: Auth WebAuthn Integration Tests (iOS)
+    uses: ./.github/workflows/integ_test_auth_webauthn.yml
     secrets: inherit

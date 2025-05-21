@@ -72,7 +72,7 @@ public final actor WebSocketClient: NSObject {
         interceptor: WebSocketInterceptor? = nil,
         networkMonitor: WebSocketNetworkMonitorProtocol = AmplifyNetworkMonitor()
     ) {
-        self.url = Self.useWebSocketProtocolScheme(url: url)
+        self.url = url
         self.handshakeHttpHeaders = handshakeHttpHeaders
         self.interceptor = interceptor
         self.autoConnectOnNetworkStatusChange = false
@@ -159,6 +159,8 @@ public final actor WebSocketClient: NSObject {
         let decoratedURL = (await self.interceptor?.interceptConnection(url: self.url)) ?? self.url
         var urlRequest = URLRequest(url: decoratedURL)
         self.handshakeHttpHeaders.forEach { urlRequest.setValue($0.value, forHTTPHeaderField: $0.key) }
+
+        urlRequest = await self.interceptor?.interceptConnection(request: urlRequest) ?? urlRequest
 
         let urlSession = URLSession(configuration: .default, delegate: self, delegateQueue: nil)
         return urlSession.webSocketTask(with: urlRequest)
@@ -265,7 +267,7 @@ extension WebSocketClient: URLSessionWebSocketDelegate {
 extension WebSocketClient {
     /// Monitor network status. Disconnect or reconnect when the network drops or comes back online.
     private func startNetworkMonitor() {
-        networkMonitor.publisher.sink(receiveValue: { stateChange in
+        networkMonitor.publisher.sink(receiveValue: { [weak self] stateChange in
             Task { [weak self] in
                 await self?.onNetworkStateChange(stateChange)
             }
@@ -304,7 +306,7 @@ extension WebSocketClient {
             return closeCode
         }
         .compactMap { $0 }
-        .sink(receiveCompletion: { _ in }) { closeCode in
+        .sink(receiveCompletion: { _ in }) { [weak self] closeCode in
             Task { [weak self] in await self?.retryOnCloseCode(closeCode) }
         }
         .store(in: &cancelables)
@@ -319,7 +321,7 @@ extension WebSocketClient {
             }
             return false
         }
-        .sink(receiveCompletion: { _ in }) { _ in
+        .sink(receiveCompletion: { _ in }) { [weak self] _ in
             Task { [weak self] in
                 await self?.retryWithJitter.reset()
             }
@@ -342,16 +344,6 @@ extension WebSocketClient {
         default: break
         }
 
-    }
-}
-
-extension WebSocketClient {
-    static func useWebSocketProtocolScheme(url: URL) -> URL {
-        guard var urlComponents = URLComponents(url: url, resolvingAgainstBaseURL: false) else {
-            return url
-        }
-        urlComponents.scheme = urlComponents.scheme == "http" ? "ws" : "wss"
-        return urlComponents.url ?? url
     }
 }
 

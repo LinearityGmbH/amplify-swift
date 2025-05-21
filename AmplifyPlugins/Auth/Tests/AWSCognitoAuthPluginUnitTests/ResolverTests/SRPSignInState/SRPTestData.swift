@@ -110,12 +110,13 @@ extension RespondToAuthChallengeOutput {
 
     static func testData(
         challenge: CognitoIdentityProviderClientTypes.ChallengeNameType = .smsMfa,
-        challengeParameters: [String: String] = [:]) -> RespondToAuthChallengeOutput {
+        challengeParameters: [String: String] = [:],
+        session: String = "session") -> RespondToAuthChallengeOutput {
             return RespondToAuthChallengeOutput(
                 authenticationResult: nil,
                 challengeName: challenge,
                 challengeParameters: challengeParameters,
-                session: "session")
+                session: session)
         }
 
 }
@@ -129,6 +130,7 @@ extension RespondToAuthChallenge {
         parameters: [String: String] = [:]) -> RespondToAuthChallenge {
             RespondToAuthChallenge(
                 challenge: challenge,
+                availableChallenges: [],
                 username: username,
                 session: session,
                 parameters: parameters)
@@ -148,7 +150,7 @@ extension SignInEvent {
 
     static let initiateSRPEvent = SignInEvent(
         id: "initiateSRPEvent",
-        eventType: .initiateSignInWithSRP(.testData, .noData)
+        eventType: .initiateSignInWithSRP(.testData, .noData, nil)
     )
 
     static let respondPasswordVerifierEvent = SignInEvent(

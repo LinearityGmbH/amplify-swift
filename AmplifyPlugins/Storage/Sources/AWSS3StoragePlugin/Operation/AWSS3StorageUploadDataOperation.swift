@@ -22,23 +22,29 @@ class AWSS3StorageUploadDataOperation: AmplifyInProcessReportingOperation<
 >, StorageUploadDataOperation {
 
     let storageConfiguration: AWSS3StoragePluginConfiguration
-    let storageService: AWSS3StorageServiceBehavior
+    let storageServiceProvider: AWSS3StorageServiceProvider
     let authService: AWSAuthServiceBehavior
 
     var storageTaskReference: StorageTaskReference?
-
+    private var resolvedPath: String?
     /// Serial queue for synchronizing access to `storageTaskReference`.
     private let storageTaskActionQueue = DispatchQueue(label: "com.amazonaws.amplify.StorageTaskActionQueue")
 
+    private var storageService: AWSS3StorageServiceBehavior {
+        get throws {
+            return try storageServiceProvider()
+        }
+    }
+
     init(_ request: StorageUploadDataRequest,
          storageConfiguration: AWSS3StoragePluginConfiguration,
-         storageService: AWSS3StorageServiceBehavior,
+         storageServiceProvider: @escaping AWSS3StorageServiceProvider,
          authService: AWSAuthServiceBehavior,
          progressListener: InProcessListener? = nil,
          resultListener: ResultListener? = nil) {
 
         self.storageConfiguration = storageConfiguration
-        self.storageService = storageService
+        self.storageServiceProvider = storageServiceProvider
         self.authService = authService
         super.init(categoryType: .storage,
                    eventName: HubPayload.EventName.Storage.uploadData,
@@ -84,16 +90,25 @@ class AWSS3StorageUploadDataOperation: AmplifyInProcessReportingOperation<
             return
         }
 
-        let prefixResolver = storageConfiguration.prefixResolver ??
-        StorageAccessLevelAwarePrefixResolver(authService: authService)
+
 
         Task {
             do {
-                let prefix = try await prefixResolver.resolvePrefix(for: request.options.accessLevel, targetIdentityId: request.options.targetIdentityId)
-                let serviceKey = prefix + request.key
+
+                let serviceKey: String
+                if let path = request.path {
+                    serviceKey = try await path.resolvePath(authService: self.authService)
+                    resolvedPath = serviceKey
+                } else {
+                    let prefixResolver = storageConfiguration.prefixResolver ??
+                    StorageAccessLevelAwarePrefixResolver(authService: authService)
+                    let prefix = try await prefixResolver.resolvePrefix(for: request.options.accessLevel, targetIdentityId: request.options.targetIdentityId)
+                    serviceKey = prefix + request.key
+                }
+
                 let accelerate = try AWSS3PluginOptions.accelerateValue(pluginOptions: request.options.pluginOptions)
                 if request.data.count > StorageUploadDataRequest.Options.multiPartUploadSizeThreshold {
-                    storageService.multiPartUpload(
+                    try storageService.multiPartUpload(
                         serviceKey: serviceKey,
                         uploadSource: .data(request.data),
                         contentType: request.options.contentType,
@@ -103,7 +118,7 @@ class AWSS3StorageUploadDataOperation: AmplifyInProcessReportingOperation<
                         self?.onServiceEvent(event: event)
                     }
                 } else {
-                    storageService.upload(
+                    try storageService.upload(
                         serviceKey: serviceKey,
                         uploadSource: .data(request.data),
                         contentType: request.options.contentType,
@@ -134,7 +149,11 @@ class AWSS3StorageUploadDataOperation: AmplifyInProcessReportingOperation<
         case .inProcess(let progress):
             dispatch(progress)
         case .completed:
-            dispatch(request.key)
+            if let path = resolvedPath {
+                dispatch(path)
+            } else {
+                dispatch(request.key)
+            }
             finish()
         case .failed(let error):
             dispatch(error)

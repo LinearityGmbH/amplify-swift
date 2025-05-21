@@ -8,13 +8,13 @@
 import Foundation
 import Amplify
 import AWSS3
-import AWSClientRuntime
+@_spi(UnknownAWSHTTPServiceError) import AWSClientRuntime
 
 extension AWSS3.NoSuchBucket: StorageErrorConvertible {
     var storageError: StorageError {
         .service(
             "The specific bucket does not exist",
-            "",
+            "Make sure the bucket exists",
             self
         )
     }

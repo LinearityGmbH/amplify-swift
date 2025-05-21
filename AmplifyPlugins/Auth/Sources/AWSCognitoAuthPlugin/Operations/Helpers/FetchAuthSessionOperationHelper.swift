@@ -7,15 +7,17 @@
 
 import Foundation
 import Amplify
+import AWSPluginsCore
 
-class FetchAuthSessionOperationHelper: DefaultLogger {
+class FetchAuthSessionOperationHelper {
 
     typealias FetchAuthSessionCompletion = (Result<AuthSession, AuthError>) -> Void
+    var environment: Environment? = nil
 
     func fetch(_ authStateMachine: AuthStateMachine,
                forceRefresh: Bool = false) async throws -> AuthSession {
         let state = await authStateMachine.currentState
-        guard case .configured(_, let authorizationState) = state  else {
+        guard case .configured(_, let authorizationState, _) = state  else {
             let message = "Auth state machine not in configured state: \(state)"
             let error = AuthError.invalidState(message, "", nil)
             throw error
@@ -66,23 +68,21 @@ class FetchAuthSessionOperationHelper: DefaultLogger {
         authStateMachine: AuthStateMachine,
         forceRefresh: Bool) async throws -> AuthSession {
 
-            var event: AuthorizationEvent
             if forceRefresh || !credentials.areValid() {
-                if case .identityPoolWithFederation(
-                    let federatedToken,
-                    let identityId,
-                    _
-                ) = credentials {
-                    event = AuthorizationEvent(
-                        eventType: .startFederationToIdentityPool(federatedToken, identityId)
-                    )
-                } else {
+                var event: AuthorizationEvent
+                switch credentials {
+                case .identityPoolWithFederation(let federatedToken, let identityId, _):
+                    event = AuthorizationEvent(eventType: .startFederationToIdentityPool(federatedToken, identityId))
+                case .noCredentials:
+                    event = AuthorizationEvent(eventType: .fetchUnAuthSession)
+                case .userPoolOnly, .identityPoolOnly, .userPoolAndIdentityPool:
                     event = AuthorizationEvent(eventType: .refreshSession(forceRefresh))
                 }
                 await authStateMachine.send(event)
                 return try await listenForSession(authStateMachine: authStateMachine)
+            } else {
+                return credentials.cognitoSession
             }
-            return credentials.cognitoSession
         }
 
     func listenForSession(authStateMachine: AuthStateMachine) async throws -> AuthSession {
@@ -90,7 +90,7 @@ class FetchAuthSessionOperationHelper: DefaultLogger {
         let stateSequences = await authStateMachine.listen()
         log.verbose("Waiting for session to establish")
         for await state in stateSequences {
-            guard case .configured(let authenticationState, let authorizationState) = state  else {
+            guard case .configured(let authenticationState, let authorizationState, _) = state  else {
                 let message = "Auth state machine not in configured state: \(state)"
                 let error = AuthError.invalidState(message, "", nil)
                 throw error
@@ -100,7 +100,7 @@ class FetchAuthSessionOperationHelper: DefaultLogger {
             case .sessionEstablished(let credentials):
                 return credentials.cognitoSession
             case .error(let authorizationError):
-                return try sessionResultWithError(
+                return try await sessionResultWithError(
                     authorizationError,
                     authenticationState: authenticationState)
             default: continue
@@ -110,85 +110,80 @@ class FetchAuthSessionOperationHelper: DefaultLogger {
                                      "Auth plugin is in an invalid state")
     }
 
-    func sessionResultWithError(_ error: AuthorizationError,
-                                authenticationState: AuthenticationState)
-    throws -> AuthSession {
-        log.verbose("Received error - \(error)")
+    func sessionResultWithError(
+        _ error: AuthorizationError,
+        authenticationState: AuthenticationState
+    ) async throws -> AuthSession {
+        log.verbose("Received fetch auth session error - \(error)")
 
         var isSignedIn = false
+        var authError: AuthError = error.authError
+
         if case .signedIn = authenticationState {
             isSignedIn = true
         }
+
         switch error {
-        case .sessionError(let fetchError, let credentials):
-            return try sessionResultWithFetchError(fetchError,
-                                                   authenticationState: authenticationState,
-                                                   existingCredentials: credentials)
+        case .sessionError(let fetchError, _):
+            if (fetchError == .notAuthorized || fetchError == .noCredentialsToRefresh) && !isSignedIn {
+                return AuthCognitoSignedOutSessionHelper.makeSessionWithNoGuestAccess()
+            } else {
+                authError = fetchError.authError
+            }
         case .sessionExpired(let error):
+            await setRefreshTokenExpiredInSignedInData()
             let session = AuthCognitoSignedInSessionHelper.makeExpiredSignedInSession(
                 underlyingError: error)
+
             return session
         default:
-            let message = "Unknown error occurred"
-            let error = AuthError.unknown(message)
-            let session = AWSAuthCognitoSession(isSignedIn: isSignedIn,
-                                                identityIdResult: .failure(error),
-                                                awsCredentialsResult: .failure(error),
-                                                cognitoTokensResult: .failure(error))
-            return session
-        }
-    }
-
-    func sessionResultWithFetchError(_ error: FetchSessionError,
-                                     authenticationState: AuthenticationState,
-                                     existingCredentials: AmplifyCredentials)
-    throws -> AuthSession {
-
-        var isSignedIn = false
-        if case .signedIn = authenticationState {
-            isSignedIn = true
+            break
         }
 
-        switch error {
-
-        case .notAuthorized, .noCredentialsToRefresh:
-            if !isSignedIn {
-                return AuthCognitoSignedOutSessionHelper.makeSessionWithNoGuestAccess()
-            }
-
-        case .service(let error):
-            var authError: AuthError
-            if let convertedAuthError = (error as? AuthErrorConvertible)?.authError {
-                authError = convertedAuthError
-            } else {
-                authError = AuthError.service(
-                    "Unknown service error occurred",
-                    "See the attached error for more details",
-                    error)
-            }
-            let session = AWSAuthCognitoSession(
-                isSignedIn: isSignedIn,
-                identityIdResult: .failure(authError),
-                awsCredentialsResult: .failure(authError),
-                cognitoTokensResult: .failure(authError))
-            return session
-        default: break
-
-        }
-        let message = "Unknown error occurred"
-        let error = AuthError.unknown(message)
-        let session = AWSAuthCognitoSession(isSignedIn: isSignedIn,
-                                            identityIdResult: .failure(error),
-                                            awsCredentialsResult: .failure(error),
-                                            cognitoTokensResult: .failure(error))
+        let session = AWSAuthCognitoSession(
+            isSignedIn: isSignedIn,
+            identityIdResult: .failure(authError),
+            awsCredentialsResult: .failure(authError),
+            cognitoTokensResult: .failure(authError))
         return session
     }
 
-    public static var log: Logger {
-        Amplify.Logging.logger(forCategory: CategoryType.auth.displayName, forNamespace: String(describing: self))
-    }
+    func setRefreshTokenExpiredInSignedInData() async {
+        let credentialStoreClient = (environment as? AuthEnvironment)?.credentialsClient
+        do {
+            let data = try await credentialStoreClient?.fetchData(
+                type: .amplifyCredentials
+            )
+            guard case .amplifyCredentials(var credentials) = data else {
+                return
+            }
 
-    public var log: Logger {
-        Self.log
+            // Update SignedInData based on credential type
+            switch credentials {
+            case .userPoolOnly(var signedInData):
+                signedInData.isRefreshTokenExpired = true
+                credentials = .userPoolOnly(signedInData: signedInData)
+
+            case .userPoolAndIdentityPool(var signedInData, let identityId, let awsCredentials):
+                signedInData.isRefreshTokenExpired = true
+                credentials = .userPoolAndIdentityPool(
+                    signedInData: signedInData,
+                    identityID: identityId,
+                    credentials: awsCredentials)
+
+            case .identityPoolOnly, .identityPoolWithFederation, .noCredentials:
+                return
+            }
+
+            try await credentialStoreClient?.storeData(data: .amplifyCredentials(credentials))
+        } catch KeychainStoreError.itemNotFound {
+            let logger = (environment as? LoggerProvider)?.logger
+            logger?.info("No existing credentials found.")
+        } catch {
+            let logger = (environment as? LoggerProvider)?.logger
+            logger?.error("Unable to update credentials with error: \(error)")
+        }
     }
 }
+
+extension FetchAuthSessionOperationHelper: DefaultLogger { }

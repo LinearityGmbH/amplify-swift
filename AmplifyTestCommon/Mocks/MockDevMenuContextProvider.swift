@@ -5,11 +5,12 @@
 // SPDX-License-Identifier: Apache-2.0
 //
 
-#if os(iOS)
+#if os(iOS) || os(visionOS)
 import Amplify
 import UIKit
 
 /// Mock class for presenting UI context to developer menu
+@MainActor
 class MockDevMenuContextProvider: DevMenuPresentationContextProvider {
 
     let uiWindow = UIWindow()

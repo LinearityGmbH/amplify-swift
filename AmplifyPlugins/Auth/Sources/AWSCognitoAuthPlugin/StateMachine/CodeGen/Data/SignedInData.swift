@@ -14,11 +14,13 @@ public struct SignedInData {
     let signInMethod: SignInMethod
     let deviceMetadata: DeviceMetadata
     public let cognitoUserPoolTokens: AWSCognitoUserPoolTokens
+    public var isRefreshTokenExpired: Bool?
 
-    public init(userId: String,
-         username: String,
-         signedInDate: Date,
-         cognitoUserPoolTokens: AWSCognitoUserPoolTokens
+    public init(
+        userId: String,
+        username: String,
+        signedInDate: Date,
+        cognitoUserPoolTokens: AWSCognitoUserPoolTokens
     ) {
         self.userId = userId
         self.username = username
@@ -26,26 +28,30 @@ public struct SignedInData {
         self.signInMethod = .apiBased(.userSRP)
         self.deviceMetadata = DeviceMetadata.noData
         self.cognitoUserPoolTokens = cognitoUserPoolTokens
+        self.isRefreshTokenExpired = false
     }
 
-    init(signedInDate: Date,
-         signInMethod: SignInMethod,
-         deviceMetadata: DeviceMetadata = .noData,
-         cognitoUserPoolTokens: AWSCognitoUserPoolTokens
+    init(
+        signedInDate: Date,
+        signInMethod: SignInMethod,
+        deviceMetadata: DeviceMetadata = .noData,
+        cognitoUserPoolTokens: AWSCognitoUserPoolTokens
     ) {
-        let user = try? TokenParserHelper.getAuthUser(accessToken: cognitoUserPoolTokens.accessToken)
+        let user = try? TokenParserHelper.getAuthUser(
+            accessToken: cognitoUserPoolTokens.accessToken)
         self.userId = user?.userId ?? "unknown"
         self.username = user?.username ?? "unknown"
         self.signedInDate = signedInDate
         self.signInMethod = signInMethod
         self.deviceMetadata = deviceMetadata
         self.cognitoUserPoolTokens = cognitoUserPoolTokens
+        self.isRefreshTokenExpired = false
     }
 }
 
-extension SignedInData: Codable { }
+extension SignedInData: Codable {}
 
-extension SignedInData: Equatable { }
+extension SignedInData: Equatable {}
 
 extension SignedInData: CustomDebugDictionaryConvertible {
     var debugDictionary: [String: Any] {
@@ -55,7 +61,8 @@ extension SignedInData: CustomDebugDictionaryConvertible {
             "signedInDate": signedInDate,
             "signInMethod": signInMethod,
             "deviceMetadata": deviceMetadata,
-            "tokens": cognitoUserPoolTokens
+            "tokens": cognitoUserPoolTokens,
+            "refreshTokenExpired": isRefreshTokenExpired ?? false,
         ]
     }
 }

@@ -9,6 +9,7 @@ import Foundation
 import Amplify
 import AWSS3
 
+typealias AWSS3StorageServiceProvider = () throws -> AWSS3StorageServiceBehavior
 protocol AWSS3StorageServiceBehavior {
     typealias StorageServiceDownloadEventHandler = (StorageServiceDownloadEvent) -> Void
     typealias StorageServiceDownloadEvent =
@@ -32,6 +33,12 @@ protocol AWSS3StorageServiceBehavior {
     typealias StorageServiceMultiPartUploadEventHandler = (StorageServiceMultiPartUploadEvent) -> Void
     typealias StorageServiceMultiPartUploadEvent =
         StorageEvent<StorageTaskReference, Progress, Void, StorageError>
+
+
+    /// - Tag: AWSS3StorageService.client
+    var client: S3ClientProtocol { get }
+
+    var bucket: String! { get }
 
     func reset()
 
@@ -64,9 +71,11 @@ protocol AWSS3StorageServiceBehavior {
                          accelerate: Bool?,
                          onEvent: @escaping StorageServiceMultiPartUploadEventHandler)
 
+    @available(*, deprecated, message: "Use `AWSS3StorageListObjectsTask` instead")
     func list(prefix: String,
               options: StorageListRequest.Options) async throws -> StorageListResult
 
+    @available(*, deprecated, message: "Use `AWSS3StorageRemoveTask` instead")
     func delete(serviceKey: String,
                 onEvent: @escaping StorageServiceDeleteEventHandler)
 }

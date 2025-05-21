@@ -5,7 +5,7 @@
 // SPDX-License-Identifier: Apache-2.0
 //
 
-#if os(iOS) || os(macOS)
+#if os(iOS) || os(macOS) || os(visionOS)
 import Amplify
 import AuthenticationServices
 @testable import AWSCognitoAuthPlugin
@@ -112,7 +112,21 @@ class HostedUIASWebAuthenticationSessionTests: XCTestCase {
             XCTFail("Expected HostedUIError.unknown, got \(error)")
         }
     }
-    
+
+    /// Given: A HostedUIASWebAuthenticationSession
+    /// When: showHostedUI is invoked and the session factory returns an error
+    /// Then: A HostedUIError.unableToStartASWebAuthenticationSession should be returned
+    func testShowHostedUI_withUnableToStartError_shouldReturnServiceError() async {
+        factory.mockCanStart = false
+        do {
+            _ = try await session.showHostedUI()
+        } catch let error as HostedUIError {
+            XCTAssertEqual(error, .unableToStartASWebAuthenticationSession)
+        } catch {
+            XCTFail("Expected HostedUIError.unknown, got \(error)")
+        }
+    }
+
     private func createURL(queryItems: [URLQueryItem] = []) -> URL {
         var components = URLComponents(string: "https://test.com")!
         components.queryItems = queryItems
@@ -123,6 +137,7 @@ class HostedUIASWebAuthenticationSessionTests: XCTestCase {
 class ASWebAuthenticationSessionFactory {
     var mockedURL: URL?
     var mockedError: Error?
+    var mockCanStart: Bool?
 
     func createSession(
         url URL: URL,
@@ -136,6 +151,7 @@ class ASWebAuthenticationSessionFactory {
         )
         session.mockedURL = mockedURL
         session.mockedError = mockedError
+        session.mockCanStart = mockCanStart ?? true
         return session
     }
 }
@@ -160,6 +176,11 @@ class MockASWebAuthenticationSession: ASWebAuthenticationSession {
     override func start() -> Bool {
         callback(mockedURL, mockedError)
         return presentationContextProvider?.presentationAnchor(for: self) != nil
+    }
+
+    var mockCanStart = true
+    override var canStart: Bool {
+        return mockCanStart
     }
 }
 
@@ -188,7 +209,7 @@ class HostedUIASWebAuthenticationSessionTests: XCTestCase {
                 presentationAnchor: nil)
         } catch let error as HostedUIError {
             if case .serviceMessage(let message) = error {
-                XCTAssertEqual(message, "HostedUI is only available in iOS and macOS")
+                XCTAssertEqual(message, "HostedUI is only available in iOS, macOS and visionOS")
             } else {
                 XCTFail("Expected HostedUIError.serviceMessage, got \(error)")
             }

@@ -9,13 +9,14 @@
 import Foundation
 import Amplify
 import Combine
+import InternalAmplifyCredentials
 @_spi(WebSocket) import AWSPluginsCore
 
 protocol AppSyncRealTimeClientFactoryProtocol {
     func getAppSyncRealTimeClient(
         for endpointConfig: AWSAPICategoryPluginConfiguration.EndpointConfig,
         endpoint: URL,
-        authService: AWSAuthServiceBehavior,
+        authService: AWSAuthCredentialsProviderBehavior,
         authType: AWSAuthorizationType?,
         apiAuthProviderFactory: APIAuthProviderFactory
     ) async throws -> AppSyncRealTimeClientProtocol
@@ -40,7 +41,7 @@ actor AppSyncRealTimeClientFactory: AppSyncRealTimeClientFactoryProtocol {
     public func getAppSyncRealTimeClient(
         for endpointConfig: AWSAPICategoryPluginConfiguration.EndpointConfig,
         endpoint: URL,
-        authService: AWSAuthServiceBehavior,
+        authService: AWSAuthCredentialsProviderBehavior,
         authType: AWSAuthorizationType? = nil,
         apiAuthProviderFactory: APIAuthProviderFactory
     ) throws -> AppSyncRealTimeClientProtocol {
@@ -90,7 +91,7 @@ actor AppSyncRealTimeClientFactory: AppSyncRealTimeClientFactoryProtocol {
 
     private func getInterceptor(
         for authorizationConfiguration: AWSAuthorizationConfiguration,
-        authService: AWSAuthServiceBehavior,
+        authService: AWSAuthCredentialsProviderBehavior,
         apiAuthProviderFactory: APIAuthProviderFactory
     ) throws -> AppSyncRequestInterceptor & WebSocketInterceptor {
         switch authorizationConfiguration {
@@ -100,8 +101,8 @@ actor AppSyncRealTimeClientFactory: AppSyncRealTimeClientFactoryProtocol {
             let provider = AWSOIDCAuthProvider(authService: authService)
             return AuthTokenInterceptor(getLatestAuthToken: provider.getLatestAuthToken)
         case .awsIAM(let awsIAMConfiguration):
-            return IAMAuthInterceptor(authService.getCredentialsProvider(),
-                                                 region: awsIAMConfiguration.region)
+            return IAMAuthInterceptor(authService.getCredentialIdentityResolver(),
+                                      region: awsIAMConfiguration.region)
         case .openIDConnect:
             guard let oidcAuthProvider = apiAuthProviderFactory.oidcAuthProvider() else {
                 throw APIError.invalidConfiguration(
@@ -126,16 +127,16 @@ actor AppSyncRealTimeClientFactory: AppSyncRealTimeClientFactoryProtocol {
 extension AppSyncRealTimeClientFactory {
 
     /**
-     Converting appsync api url to realtime api url
-     1. api.example.com/graphql -> api.example.com/graphql/realtime
-     2. abc.appsync-api.us-east-1.amazonaws.com/graphql -> abc.appsync-realtime-api.us-east-1.amazonaws.com/graphql
+     Converting appsync api url to realtime api url, realtime endpoint has scheme 'wss'
+     1. api.example.com/graphql -> wss://api.example.com/graphql/realtime
+     2. abc.appsync-api.us-east-1.amazonaws.com/graphql -> wss://abc.appsync-realtime-api.us-east-1.amazonaws.com/graphql
      */
     static func appSyncRealTimeEndpoint(_ url: URL) -> URL {
         guard let host = url.host else {
             return url
         }
 
-        guard host.hasSuffix("amazonaws.com") else {
+        guard host.hasSuffix("amazonaws.com") || host.hasSuffix("amazonaws.com.cn") else {
             return url.appendingPathComponent("realtime")
         }
 
@@ -144,6 +145,7 @@ extension AppSyncRealTimeClientFactory {
         }
 
         urlComponents.host = host.replacingOccurrences(of: "appsync-api", with: "appsync-realtime-api")
+        urlComponents.scheme = "wss"
         guard let realTimeUrl = urlComponents.url else {
             return url
         }
@@ -152,16 +154,16 @@ extension AppSyncRealTimeClientFactory {
     }
 
     /**
-     Converting appsync realtime api url to api url
+     Converting appsync realtime api url to api url, api endpoint has scheme 'https'
      1. api.example.com/graphql/realtime -> api.example.com/graphql
-     2. abc.appsync-realtime-api.us-east-1.amazonaws.com/graphql -> abc.appsync-api.us-east-1.amazonaws.com/graphql
+     2. abc.appsync-realtime-api.us-east-1.amazonaws.com/graphql -> https://abc.appsync-api.us-east-1.amazonaws.com/graphql
      */
     static func appSyncApiEndpoint(_ url: URL) -> URL {
         guard let host = url.host else {
             return url
         }
 
-        guard host.hasSuffix("amazonaws.com") else {
+        guard host.hasSuffix("amazonaws.com") || host.hasSuffix("amazonaws.com.cn") else {
             if url.lastPathComponent == "realtime" {
                 return url.deletingLastPathComponent()
             }
@@ -173,6 +175,7 @@ extension AppSyncRealTimeClientFactory {
         }
 
         urlComponents.host = host.replacingOccurrences(of: "appsync-realtime-api", with: "appsync-api")
+        urlComponents.scheme = "https"
         guard let apiUrl = urlComponents.url else {
             return url
         }

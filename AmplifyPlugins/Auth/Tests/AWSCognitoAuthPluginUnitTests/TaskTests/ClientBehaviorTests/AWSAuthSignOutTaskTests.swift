@@ -19,7 +19,8 @@ class AWSAuthSignOutTaskTests: BasePluginTest {
     override var initialState: AuthState {
         AuthState.configured(
             AuthenticationState.signedIn(.testData),
-            AuthorizationState.sessionEstablished(.testData))
+            AuthorizationState.sessionEstablished(.testData),
+            .notStarted)
     }
 
     func testSuccessfullSignOut() async {
@@ -79,7 +80,8 @@ class AWSAuthSignOutTaskTests: BasePluginTest {
 
         let initialState = AuthState.configured(
             AuthenticationState.federatedToIdentityPool,
-            AuthorizationState.sessionEstablished(.testData))
+            AuthorizationState.sessionEstablished(.testData),
+            .notStarted)
 
         let authPlugin = configureCustomPluginWith(initialState: initialState)
 
@@ -94,11 +96,33 @@ class AWSAuthSignOutTaskTests: BasePluginTest {
 
     }
 
+    func testInvalidStateForSignOutWhenSignedInUsingHostedUI() async {
+
+        let initialState = AuthState.configured(
+            AuthenticationState.signedIn(.hostedUISignInData),
+            AuthorizationState.sessionEstablished(.hostedUITestData),
+            .notStarted)
+
+        let authPlugin = configureCustomPluginWith(initialState: initialState)
+
+        let result = await authPlugin.signOut() as? AWSCognitoSignOutResult
+
+        guard case .failed(let authError) = result else {
+            XCTFail("Sign out should have failed.")
+            return
+        }
+        guard case .configuration = authError else {
+            XCTFail("Auth error should be service but got: \(authError)")
+            return
+        }
+    }
+
     func testGuestSignOut() async {
 
         let initialState = AuthState.configured(
             AuthenticationState.signedOut(.init()),
-            AuthorizationState.sessionEstablished(.testDataIdentityPool))
+            AuthorizationState.sessionEstablished(.testDataIdentityPool),
+            .notStarted)
 
         let authPlugin = configureCustomPluginWith(initialState: initialState)
 

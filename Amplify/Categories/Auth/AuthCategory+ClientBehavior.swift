@@ -36,7 +36,7 @@ extension AuthCategory: AuthCategoryBehavior {
         return try await plugin.signIn(username: username, password: password, options: options)
     }
 
-#if os(iOS) || os(macOS)
+#if os(iOS) || os(macOS) || os(visionOS)
     public func signInWithWebUI(
         presentationAnchor: AuthUIPresentationAnchor? = nil,
         options: AuthWebUISignInRequest.Options? = nil) async throws -> AuthSignInResult {
@@ -64,6 +64,10 @@ extension AuthCategory: AuthCategoryBehavior {
         return await plugin.signOut(options: options)
     }
 
+    public func autoSignIn() async throws -> AuthSignInResult {
+        try await plugin.autoSignIn()
+    }
+    
     public func deleteUser() async throws {
         try await plugin.deleteUser()
     }

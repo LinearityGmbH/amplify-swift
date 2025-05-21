@@ -26,7 +26,6 @@ class AWSAuthDeleteUserTask: AuthDeleteUserTask, DefaultLogger {
     }
 
     func execute() async throws {
-        log.verbose("Starting execution")
         await taskHelper.didStateMachineConfigured()
         let accessToken = try await taskHelper.getAccessToken()
 
@@ -47,7 +46,7 @@ class AWSAuthDeleteUserTask: AuthDeleteUserTask, DefaultLogger {
         await authStateMachine.send(deleteUserEvent)
         log.verbose("Waiting for delete user to complete")
         for await state in stateSequences {
-            guard case .configured(let authNState, _) = state else {
+            guard case .configured(let authNState, _, _) = state else {
                 let error = AuthError.invalidState(
                     "Auth state should be in configured state and authentication state should be in deleting user state",
                     AuthPluginErrorConstants.invalidStateError,

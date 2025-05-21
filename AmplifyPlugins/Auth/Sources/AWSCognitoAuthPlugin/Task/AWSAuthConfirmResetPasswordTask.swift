@@ -27,7 +27,6 @@ class AWSAuthConfirmResetPasswordTask: AuthConfirmResetPasswordTask, DefaultLogg
     }
 
     func execute() async throws {
-        log.verbose("Starting execution")
         if let validationError = request.hasError() {
             throw validationError
         }
@@ -62,7 +61,7 @@ class AWSAuthConfirmResetPasswordTask: AuthConfirmResetPasswordTask, DefaultLogg
         let asfDeviceId = try await CognitoUserPoolASF.asfDeviceID(
             for: request.username,
             credentialStoreClient: environment.credentialsClient)
-        let encodedData = CognitoUserPoolASF.encodedContext(
+        let encodedData = await CognitoUserPoolASF.encodedContext(
             username: request.username,
             asfDeviceId: asfDeviceId,
             asfClient: environment.cognitoUserPoolASFFactory(),
