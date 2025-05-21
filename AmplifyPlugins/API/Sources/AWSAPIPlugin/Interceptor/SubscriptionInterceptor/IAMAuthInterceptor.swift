@@ -7,16 +7,17 @@
 
 import Foundation
 @_spi(WebSocket) import AWSPluginsCore
+import InternalAmplifyCredentials
 import Amplify
-import AWSClientRuntime
-import ClientRuntime
+import SmithyHTTPAPI
+import SmithyIdentity
 
 class IAMAuthInterceptor {
 
-    let authProvider: CredentialsProviding
+    let authProvider: any AWSCredentialIdentityResolver
     let region: AWSRegionType
 
-    init(_ authProvider: CredentialsProviding, region: AWSRegionType) {
+    init(_ authProvider: some AWSCredentialIdentityResolver, region: AWSRegionType) {
         self.authProvider = authProvider
         self.region = region
     }
@@ -34,7 +35,7 @@ class IAMAuthInterceptor {
         ///
         /// 1. A request is created with the IAM based auth headers (date,  accept, content encoding, content type, and
         /// additional headers.
-        let requestBuilder = SdkHttpRequestBuilder()
+        let requestBuilder = HTTPRequestBuilder()
             .withHost(host)
             .withPath(endpoint.path)
             .withMethod(.post)
@@ -50,7 +51,7 @@ class IAMAuthInterceptor {
         /// the request headers as authorization and security token.
         do {
             guard let urlRequest = try await signer.sigV4SignedRequest(requestBuilder: requestBuilder,
-                                                                 credentialsProvider: authProvider,
+                                                                 credentialIdentityResolver: authProvider,
                                                                  signingName: "appsync",
                                                                  signingRegion: region,
                                                                  date: Date()) else {
@@ -87,15 +88,14 @@ class IAMAuthInterceptor {
 }
 
 extension IAMAuthInterceptor: WebSocketInterceptor {
-    func interceptConnection(url: URL) async -> URL {
+
+    func interceptConnection(request: URLRequest) async -> URLRequest {
+        guard let url = request.url else { return request }
         let connectUrl = AppSyncRealTimeClientFactory.appSyncApiEndpoint(url).appendingPathComponent("connect")
         guard let authHeader = await getAuthHeader(connectUrl, with: "{}") else {
-            return connectUrl
+            return request
         }
-        
-        return AppSyncRealTimeRequestAuth.URLQuery(
-            header: .iam(authHeader)
-        ).withBaseURL(url)
+        return request.injectAppSyncAuthToRequestHeader(auth: .iam(authHeader))
     }
 }
 

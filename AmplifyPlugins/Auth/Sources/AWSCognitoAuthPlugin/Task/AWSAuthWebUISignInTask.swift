@@ -5,7 +5,7 @@
 // SPDX-License-Identifier: Apache-2.0
 //
 
-#if os(iOS) || os(macOS)
+#if os(iOS) || os(macOS) || os(visionOS)
 import Foundation
 import Amplify
 import AWSPluginsCore
@@ -33,7 +33,6 @@ class AWSAuthWebUISignInTask: AuthWebUISignInTask, DefaultLogger {
     }
 
     func execute() async throws -> AuthSignInResult {
-        log.verbose("Starting execution")
         do {
             await taskHelper.didStateMachineConfigured()
             let result = try await helper.initiateSignIn()

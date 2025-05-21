@@ -5,16 +5,17 @@
 // SPDX-License-Identifier: Apache-2.0
 //
 
-import Foundation
-import Amplify
-
+import AWSClientRuntime
 import AWSCognitoIdentity
 import AWSCognitoIdentityProvider
 import AWSPluginsCore
-import ClientRuntime
-import AWSClientRuntime
-@_spi(PluginHTTPClientEngine) import AWSPluginsCore
 @_spi(InternalHttpEngineProxy) import AWSPluginsCore
+@_spi(InternalAmplifyConfiguration) import Amplify
+import ClientRuntime
+import Foundation
+@_spi(PluginHTTPClientEngine) import InternalAmplifyCredentials
+import SmithyRetries
+import SmithyRetriesAPI
 
 extension AWSCognitoAuthPlugin {
 
@@ -24,21 +25,25 @@ extension AWSCognitoAuthPlugin {
     /// - Throws:
     ///   - PluginError.pluginConfigurationError: If one of the configuration values is invalid or empty
     public func configure(using configuration: Any?) throws {
-
-        guard let jsonValueConfiguration = configuration as? JSONValue else {
+        let authConfiguration: AuthConfiguration
+        if let configuration = configuration as? AmplifyOutputsData {
+            authConfiguration = try ConfigurationHelper.authConfiguration(configuration)
+            jsonConfiguration = ConfigurationHelper.createUserPoolJsonConfiguration(
+                authConfiguration)
+        } else if let jsonValueConfiguration = configuration as? JSONValue {
+            jsonConfiguration = jsonValueConfiguration
+            authConfiguration = try ConfigurationHelper.authConfiguration(jsonValueConfiguration)
+        } else {
             throw PluginError.pluginConfigurationError(
                 AuthPluginErrorConstants.decodeConfigurationError.errorDescription,
                 AuthPluginErrorConstants.decodeConfigurationError.recoverySuggestion)
         }
 
-        jsonConfiguration = jsonValueConfiguration
-
-        let authConfiguration = try ConfigurationHelper.authConfiguration(jsonValueConfiguration)
-
         let credentialStoreResolver = CredentialStoreState.Resolver().eraseToAnyResolver()
         let credentialEnvironment = credentialStoreEnvironment(authConfiguration: authConfiguration)
-        let credentialStoreMachine = StateMachine(resolver: credentialStoreResolver,
-                                                  environment: credentialEnvironment)
+        let credentialStoreMachine = StateMachine(
+            resolver: credentialStoreResolver,
+            environment: credentialEnvironment)
         let credentialsClient = CredentialStoreOperationClient(
             credentialStoreStateMachine: credentialStoreMachine)
 
@@ -55,21 +60,24 @@ extension AWSCognitoAuthPlugin {
             authConfiguration.getUserPoolConfiguration(),
             credentialStoreEnvironment: credentialEnvironment.credentialStoreEnvironment)
 
-        configure(authConfiguration: authConfiguration,
-                  authEnvironment: authEnvironment,
-                  authStateMachine: authStateMachine,
-                  credentialStoreStateMachine: credentialStoreMachine,
-                  hubEventHandler: hubEventHandler,
-                  analyticsHandler: analyticsHandler)
+        configure(
+            authConfiguration: authConfiguration,
+            authEnvironment: authEnvironment,
+            authStateMachine: authStateMachine,
+            credentialStoreStateMachine: credentialStoreMachine,
+            hubEventHandler: hubEventHandler,
+            analyticsHandler: analyticsHandler)
     }
 
-    func configure(authConfiguration: AuthConfiguration,
-                   authEnvironment: AuthEnvironment,
-                   authStateMachine: AuthStateMachine,
-                   credentialStoreStateMachine: CredentialStoreStateMachine,
-                   hubEventHandler: AuthHubEventBehavior,
-                   analyticsHandler: UserPoolAnalyticsBehavior,
-                   queue: OperationQueue = OperationQueue()) {
+    func configure(
+        authConfiguration: AuthConfiguration,
+        authEnvironment: AuthEnvironment,
+        authStateMachine: AuthStateMachine,
+        credentialStoreStateMachine: CredentialStoreStateMachine,
+        hubEventHandler: AuthHubEventBehavior,
+        analyticsHandler: UserPoolAnalyticsBehavior,
+        queue: OperationQueue = OperationQueue()
+    ) {
 
         self.authConfiguration = authConfiguration
         self.queue = queue
@@ -88,10 +96,12 @@ extension AWSCognitoAuthPlugin {
     private func makeUserPool() throws -> CognitoUserPoolBehavior {
         switch authConfiguration {
         case .userPools(let userPoolConfig), .userPoolsAndIdentityPools(let userPoolConfig, _):
-            let configuration = try CognitoIdentityProviderClient.CognitoIdentityProviderClientConfiguration(
-                region: userPoolConfig.region,
-                serviceSpecific: .init(endpointResolver: userPoolConfig.endpoint?.resolver)
-            )
+            let configuration =
+                try CognitoIdentityProviderClient.CognitoIdentityProviderClientConfiguration(
+                    region: userPoolConfig.region,
+                    signingRegion: userPoolConfig.region,
+                    endpointResolver: userPoolConfig.endpoint?.resolver
+                )
 
             if var httpClientEngineProxy = httpClientEngineProxy {
                 httpClientEngineProxy.target = baseClientEngine(for: configuration)
@@ -103,12 +113,20 @@ extension AWSCognitoAuthPlugin {
             }
 
             if let requestTimeout = networkPreferences?.timeoutIntervalForRequest {
-                configuration.httpClientConfiguration = HttpClientConfiguration(connectTimeout: requestTimeout)
+                configuration.httpClientConfiguration = HttpClientConfiguration(
+                    connectTimeout: requestTimeout)
             }
 
             if let maxRetryUnwrapped = networkPreferences?.maxRetryCount {
-                configuration.retryStrategyOptions = RetryStrategyOptions(maxRetriesBase: Int(maxRetryUnwrapped))
+                configuration.retryStrategyOptions = RetryStrategyOptions(
+                    backoffStrategy: ExponentialBackoffStrategy(),
+                    maxRetriesBase: Int(maxRetryUnwrapped)
+                )
             }
+
+            let authService = AWSAuthService()
+            configuration.awsCredentialIdentityResolver =
+                authService.getCredentialIdentityResolver()
 
             return CognitoIdentityProviderClient(config: configuration)
         default:
@@ -118,19 +136,28 @@ extension AWSCognitoAuthPlugin {
 
     private func makeIdentityClient() throws -> CognitoIdentityBehavior {
         switch authConfiguration {
-        case .identityPools(let identityPoolConfig), .userPoolsAndIdentityPools(_, let identityPoolConfig):
+        case .identityPools(let identityPoolConfig),
+            .userPoolsAndIdentityPools(_, let identityPoolConfig):
             let configuration = try CognitoIdentityClient.CognitoIdentityClientConfiguration(
                 region: identityPoolConfig.region
             )
             configuration.httpClientEngine = .userAgentEngine(for: configuration)
 
             if let requestTimeout = networkPreferences?.timeoutIntervalForRequest {
-                configuration.httpClientConfiguration = HttpClientConfiguration(connectTimeout: requestTimeout)
+                configuration.httpClientConfiguration = HttpClientConfiguration(
+                    connectTimeout: requestTimeout)
             }
 
             if let maxRetryUnwrapped = networkPreferences?.maxRetryCount {
-                configuration.retryStrategyOptions = RetryStrategyOptions(maxRetriesBase: Int(maxRetryUnwrapped))
+                configuration.retryStrategyOptions = RetryStrategyOptions(
+                    backoffStrategy: ExponentialBackoffStrategy(),
+                    maxRetriesBase: Int(maxRetryUnwrapped)
+                )
             }
+
+            let authService = AWSAuthService()
+            configuration.awsCredentialIdentityResolver =
+                authService.getCredentialIdentityResolver()
 
             return CognitoIdentityClient(config: configuration)
         default:
@@ -170,7 +197,12 @@ extension AWSCognitoAuthPlugin {
     }
 
     func makeCredentialStore() -> AmplifyAuthCredentialStoreBehavior {
-        AWSCognitoAuthCredentialStore(authConfiguration: authConfiguration)
+        return AWSCognitoAuthCredentialStore(
+            authConfiguration: authConfiguration,
+            accessGroup: secureStoragePreferences?.accessGroup?.name,
+            migrateKeychainItemsOfUserSession: secureStoragePreferences?.accessGroup?
+                .migrateKeychainItems ?? false
+        )
     }
 
     private func makeLegacyKeychainStore(service: String) -> KeychainStoreBehavior {
@@ -208,8 +240,9 @@ extension AWSCognitoAuthPlugin {
                 credentialsClient: credentialsClient,
                 logger: log)
 
-        case .userPoolsAndIdentityPools(let userPoolConfigurationData,
-                                        let identityPoolConfigurationData):
+        case .userPoolsAndIdentityPools(
+            let userPoolConfigurationData,
+            let identityPoolConfigurationData):
             let authenticationEnvironment = authenticationEnvironment(
                 userPoolConfigData: userPoolConfigurationData)
             let authorizationEnvironment = authorizationEnvironment(
@@ -225,10 +258,13 @@ extension AWSCognitoAuthPlugin {
         }
     }
 
-    private func authenticationEnvironment(userPoolConfigData: UserPoolConfigurationData) -> AuthenticationEnvironment {
+    private func authenticationEnvironment(userPoolConfigData: UserPoolConfigurationData)
+        -> AuthenticationEnvironment
+    {
 
-        let srpAuthEnvironment = BasicSRPAuthEnvironment(userPoolConfiguration: userPoolConfigData,
-                                                         cognitoUserPoolFactory: makeUserPool)
+        let srpAuthEnvironment = BasicSRPAuthEnvironment(
+            userPoolConfiguration: userPoolConfigData,
+            cognitoUserPoolFactory: makeUserPool)
         let srpSignInEnvironment = BasicSRPSignInEnvironment(srpAuthEnvironment: srpAuthEnvironment)
         let userPoolEnvironment = BasicUserPoolEnvironment(
             userPoolConfiguration: userPoolConfigData,
@@ -236,27 +272,36 @@ extension AWSCognitoAuthPlugin {
             cognitoUserPoolASFFactory: makeCognitoASF,
             cognitoUserPoolAnalyticsHandlerFactory: makeUserPoolAnalytics)
         let hostedUIEnvironment = hostedUIEnvironment(userPoolConfigData)
-        return BasicAuthenticationEnvironment(srpSignInEnvironment: srpSignInEnvironment,
-                                              userPoolEnvironment: userPoolEnvironment,
-                                              hostedUIEnvironment: hostedUIEnvironment)
+        return BasicAuthenticationEnvironment(
+            srpSignInEnvironment: srpSignInEnvironment,
+            userPoolEnvironment: userPoolEnvironment,
+            hostedUIEnvironment: hostedUIEnvironment)
     }
 
-    private func hostedUIEnvironment(_ configuration: UserPoolConfigurationData) -> HostedUIEnvironment? {
+    private func hostedUIEnvironment(_ configuration: UserPoolConfigurationData)
+        -> HostedUIEnvironment?
+    {
         guard let hostedUIConfig = configuration.hostedUIConfig else {
             return nil
         }
-        return BasicHostedUIEnvironment(configuration: hostedUIConfig,
-                                        hostedUISessionFactory: makeHostedUISession,
-                                        urlSessionFactory: makeURLSession,
-                                        randomStringFactory: makeRandomString)
+        return BasicHostedUIEnvironment(
+            configuration: hostedUIConfig,
+            hostedUISessionFactory: makeHostedUISession,
+            urlSessionFactory: makeURLSession,
+            randomStringFactory: makeRandomString)
     }
 
-    private func authorizationEnvironment(identityPoolConfigData: IdentityPoolConfigurationData) -> AuthorizationEnvironment {
-        BasicAuthorizationEnvironment(identityPoolConfiguration: identityPoolConfigData,
-                                      cognitoIdentityFactory: makeIdentityClient)
+    private func authorizationEnvironment(identityPoolConfigData: IdentityPoolConfigurationData)
+        -> AuthorizationEnvironment
+    {
+        BasicAuthorizationEnvironment(
+            identityPoolConfiguration: identityPoolConfigData,
+            cognitoIdentityFactory: makeIdentityClient)
     }
 
-    private func credentialStoreEnvironment(authConfiguration: AuthConfiguration) -> CredentialEnvironment {
+    private func credentialStoreEnvironment(authConfiguration: AuthConfiguration)
+        -> CredentialEnvironment
+    {
         CredentialEnvironment(
             authConfiguration: authConfiguration,
             credentialStoreEnvironment: BasicCredentialStoreEnvironment(

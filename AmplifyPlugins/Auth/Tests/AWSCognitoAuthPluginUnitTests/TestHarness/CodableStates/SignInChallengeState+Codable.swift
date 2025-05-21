@@ -28,10 +28,12 @@ extension SignInChallengeState: Codable {
             self = .waitingForAnswer(
                 RespondToAuthChallenge(
                     challenge: try nestedContainerValue.decode(CognitoIdentityProviderClientTypes.ChallengeNameType.self, forKey: .challengeName),
+                    // TODO: Fix deocoding
+                    availableChallenges: [],
                     username: try nestedContainerValue.decode(String.self, forKey: .username),
                     session: try nestedContainerValue.decode(String.self, forKey: .session),
                     parameters: try nestedContainerValue.decode([String: String].self, forKey: .parameters)),
-                .apiBased(.userSRP))
+                .apiBased(.userSRP), .confirmSignInWithTOTPCode)
         } else {
             fatalError("Decoding not supported")
         }

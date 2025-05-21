@@ -27,7 +27,8 @@ class ClientSecretConfigurationTests: XCTestCase {
                     signedInDate: Date(),
                     signInMethod: .apiBased(.userSRP),
                     cognitoUserPoolTokens: AWSCognitoUserPoolTokens.testData)),
-            AuthorizationState.sessionEstablished(AmplifyCredentials.testData))
+            AuthorizationState.sessionEstablished(AmplifyCredentials.testData),
+            .notStarted)
     }
 
     override func setUp() {
@@ -104,7 +105,7 @@ class ClientSecretConfigurationTests: XCTestCase {
         mockIdentityProvider = MockIdentityProvider(
             mockConfirmForgotPasswordOutput: { request in
                 XCTAssertNotNil(request.secretHash)
-                return try await ConfirmForgotPasswordOutput(httpResponse: MockHttpResponse.ok)
+                return ConfirmForgotPasswordOutput()
             }
         )
         try await plugin.confirmResetPassword(

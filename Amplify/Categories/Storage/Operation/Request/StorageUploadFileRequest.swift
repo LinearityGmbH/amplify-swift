@@ -13,8 +13,14 @@ import Foundation
 /// - Tag: StorageUploadFileRequest
 public struct StorageUploadFileRequest: AmplifyOperationRequest {
 
+    /// The path for the object in storage
+    ///
+    /// - Tag: StorageDownloadFileRequest.path
+    public let path: (any StoragePath)?
+
     /// The unique identifier for the object in storage
     /// - Tag: StorageUploadFileRequest.key
+    @available(*, deprecated, message: "Use `path` instead of `key`")
     public let key: String
 
     /// The file to be uploaded
@@ -26,10 +32,19 @@ public struct StorageUploadFileRequest: AmplifyOperationRequest {
     public let options: Options
 
     /// - Tag: StorageUploadFileRequest.init
+    @available(*, deprecated, message: "Use init(path:local:options)")
     public init(key: String, local: URL, options: Options) {
         self.key = key
         self.local = local
         self.options = options
+        self.path = nil
+    }
+
+    public init(path: any StoragePath, local: URL, options: Options) {
+        self.key = ""
+        self.local = local
+        self.options = options
+        self.path = path
     }
 }
 
@@ -43,17 +58,24 @@ public extension StorageUploadFileRequest {
         /// Access level of the storage system. Defaults to `public`
         ///
         /// - Tag: StorageUploadFileRequestOptions.accessLevel
+        @available(*, deprecated, message: "Use `path` in Storage API instead of `Options`")
         public let accessLevel: StorageAccessLevel
 
         /// Target user to apply the action on.
         ///
         /// - Tag: StorageUploadFileRequestOptions.targetIdentityId
+        @available(*, deprecated, message: "Use `path` in Storage API instead of `Options`")
         public let targetIdentityId: String?
 
         /// Metadata for the object to store
         ///
         /// - Tag: StorageUploadFileRequestOptions.metadata
         public let metadata: [String: String]?
+
+        /// A specific Storage Bucket to upload the file. Defaults to `nil`, in which case the default one will be used.
+        ///
+        /// - Tag: StorageUploadFileRequestOptions.bucket
+        public let bucket: (any StorageBucket)?
 
         /// The standard MIME type describing the format of the object to store
         ///
@@ -68,14 +90,47 @@ public extension StorageUploadFileRequest {
         public let pluginOptions: Any?
 
         /// - Tag: StorageUploadFileRequestOptions.init
-        public init(accessLevel: StorageAccessLevel = .guest,
-                    targetIdentityId: String? = nil,
-                    metadata: [String: String]? = nil,
-                    contentType: String? = nil,
-                    pluginOptions: Any? = nil) {
+        @available(*, deprecated, message: "Use init(metadata:contentType:pluginOptions)")
+        public init(
+            accessLevel: StorageAccessLevel = .guest,
+            targetIdentityId: String? = nil,
+            metadata: [String: String]? = nil,
+            contentType: String? = nil,
+            pluginOptions: Any? = nil
+        ) {
             self.accessLevel = accessLevel
             self.targetIdentityId = targetIdentityId
             self.metadata = metadata
+            self.bucket = nil
+            self.contentType = contentType
+            self.pluginOptions = pluginOptions
+        }
+
+        /// - Tag: StorageUploadFileRequestOptions.init
+        public init(
+            metadata: [String: String]? = nil,
+            contentType: String? = nil,
+            pluginOptions: Any? = nil
+        ) {
+            self.accessLevel = .guest
+            self.targetIdentityId = nil
+            self.metadata = metadata
+            self.bucket = nil
+            self.contentType = contentType
+            self.pluginOptions = pluginOptions
+        }
+
+        /// - Tag: StorageUploadFileRequestOptions.init
+        public init(
+            metadata: [String: String]? = nil,
+            bucket: some StorageBucket,
+            contentType: String? = nil,
+            pluginOptions: Any? = nil
+        ) {
+            self.accessLevel = .guest
+            self.targetIdentityId = nil
+            self.metadata = metadata
+            self.bucket = bucket
             self.contentType = contentType
             self.pluginOptions = pluginOptions
         }

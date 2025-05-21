@@ -6,7 +6,6 @@
 //
 
 #if os(iOS) || os(macOS)
-
 import Foundation
 
 import XCTest
@@ -34,12 +33,49 @@ class AWSAuthHostedUISignInTests: XCTestCase {
         scopes: ["name"],
         signInRedirectURI: "myapp://",
         signOutRedirectURI: "myapp://"))
-    let initialState = AuthState.configured(.signedOut(.init(lastKnownUserName: nil)), .configured)
+    let initialState = AuthState.configured(.signedOut(.init(lastKnownUserName: nil)), .configured, .notStarted)
 
     func urlSessionMock() -> URLSession {
         let configuration = URLSessionConfiguration.ephemeral
         configuration.protocolClasses = [MockURLProtocol.self]
         return URLSession(configuration: configuration)
+    }
+
+    private func customPlugin(with cusotmConfiguration: HostedUIConfigurationData?) -> AWSCognitoAuthPlugin {
+        let plugin = AWSCognitoAuthPlugin()
+        mockJson = try! JSONSerialization.data(withJSONObject: mockTokenResult)
+        MockURLProtocol.requestHandler = { _ in
+            return (HTTPURLResponse(), self.mockJson)
+        }
+
+        func sessionFactory() -> HostedUISessionBehavior {
+            MockHostedUISession(result: mockHostedUIResult)
+        }
+
+        func mockRandomString() -> RandomStringBehavior {
+            return MockRandomStringGenerator(mockString: mockState, mockUUID: mockState)
+        }
+
+        let environment = BasicHostedUIEnvironment(configuration: cusotmConfiguration ?? configuration,
+                                                   hostedUISessionFactory: sessionFactory,
+                                                   urlSessionFactory: urlSessionMock,
+                                                   randomStringFactory: mockRandomString)
+        let authEnvironment = Defaults.makeDefaultAuthEnvironment(
+            userPoolFactory: { self.mockIdentityProvider },
+            hostedUIEnvironment: environment)
+        let stateMachine = Defaults.authStateMachineWith(
+            environment: authEnvironment,
+            initialState: initialState
+        )
+
+        plugin.configure(
+            authConfiguration: Defaults.makeDefaultAuthConfigData(withHostedUI: configuration),
+            authEnvironment: authEnvironment,
+            authStateMachine: stateMachine,
+            credentialStoreStateMachine: Defaults.makeDefaultCredentialStateMachine(),
+            hubEventHandler: MockAuthHubEventBehavior(),
+            analyticsHandler: MockAnalyticsHandler())
+        return plugin
     }
 
     override func setUp() {
@@ -176,7 +212,7 @@ class AWSAuthHostedUISignInTests: XCTestCase {
             errorExpectation.fulfill()
         }
 
-        waitForExpectations(timeout: networkTimeout)
+        await fulfillment(of: [errorExpectation], timeout: networkTimeout)
         mockHostedUIResult = .success([
             .init(name: "state", value: mockState),
             .init(name: "code", value: mockProof)
@@ -189,7 +225,7 @@ class AWSAuthHostedUISignInTests: XCTestCase {
         } catch {
             XCTFail("Should not fail with error = \(error)")
         }
-        waitForExpectations(timeout: networkTimeout)
+        await fulfillment(of: [signInExpectation], timeout: networkTimeout)
     }
 
     @MainActor
@@ -221,6 +257,22 @@ class AWSAuthHostedUISignInTests: XCTestCase {
             XCTFail("Should not succeed")
         } catch {
             guard case AuthError.invalidState = error else {
+                XCTFail("Should not fail with error = \(error)")
+                return
+            }
+            expectation.fulfill()
+        }
+        await fulfillment(of: [expectation], timeout: networkTimeout)
+    }
+
+    func testUnableToStartASWebAuthenticationSession() async {
+        mockHostedUIResult = .failure(.unableToStartASWebAuthenticationSession)
+        let expectation  = expectation(description: "SignIn operation should complete")
+        do {
+            _ = try await plugin.signInWithWebUI(presentationAnchor: ASPresentationAnchor(), options: nil)
+            XCTFail("Should not succeed")
+        } catch {
+            guard case AuthError.service = error else {
                 XCTFail("Should not fail with error = \(error)")
                 return
             }
@@ -294,6 +346,41 @@ class AWSAuthHostedUISignInTests: XCTestCase {
         await fulfillment(of: [expectation], timeout: networkTimeout)
     }
 
+    @MainActor
+    func testInvalidRedirectConfigurationFailure() async {
+        let invalidRedirectConfig = HostedUIConfigurationData(clientId: "clientId", oauth: .init(
+            domain: "cognitodomain",
+            scopes: ["name"],
+            signInRedirectURI: "@#$%junk1343",
+            signOutRedirectURI: "@3451://"))
+        let testPlugin = customPlugin(with: invalidRedirectConfig)
+
+        mockHostedUIResult = .success([
+            .init(name: "state", value: mockState),
+            .init(name: "code", value: mockProof)
+        ])
+        mockTokenResult = [
+            "refresh_token": AWSCognitoUserPoolTokens.testData.refreshToken,
+            "expires_in": 10] as [String: Any]
+        mockJson = try! JSONSerialization.data(withJSONObject: mockTokenResult)
+        MockURLProtocol.requestHandler = { _ in
+            return (HTTPURLResponse(), self.mockJson)
+        }
+
+        let expectation  = expectation(description: "SignIn operation should complete")
+        do {
+            _ = try await testPlugin.signInWithWebUI(presentationAnchor: ASPresentationAnchor(), options: nil)
+            XCTFail("Should not succeed")
+        } catch {
+            guard case AuthError.configuration = error else {
+                XCTFail("Should not fail with error = \(error)")
+                return
+            }
+            expectation.fulfill()
+        }
+        await fulfillment(of: [expectation], timeout: networkTimeout)
+    }
+
 
 
     /// Test a signIn restart while another sign in is in progress
@@ -343,5 +430,4 @@ class AWSAuthHostedUISignInTests: XCTestCase {
         }
     }
 }
-
 #endif

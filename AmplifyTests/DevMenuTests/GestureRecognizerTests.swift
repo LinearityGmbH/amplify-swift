@@ -5,7 +5,7 @@
 // SPDX-License-Identifier: Apache-2.0
 //
 
-#if os(iOS)
+#if os(iOS) && !os(visionOS)
 import XCTest
 @testable import Amplify
 @testable import AmplifyTestCommon
@@ -22,6 +22,7 @@ class GestureRecognizerTests: XCTestCase {
     /// - Then:
     ///    - It should return true
 
+    @MainActor
     func testGestureRecognizerAddedToWindow() {
         let contextProvider = MockDevMenuContextProvider()
         let longPressGestureRecognizer =

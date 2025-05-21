@@ -11,6 +11,7 @@ import Combine
 @testable import Amplify
 @testable import AWSAPIPlugin
 @testable @_spi(WebSocket) import AWSPluginsCore
+@testable import InternalAmplifyCredentials
 
 class AppSyncRealTimeClientTests: XCTestCase {
     let subscriptionRequest = """
@@ -124,7 +125,7 @@ class AppSyncRealTimeClientTests: XCTestCase {
     }
 
     func testMaxSubscriptionReached_throwMaxSubscriptionsReachedError() async throws {
-        let numOfMaxSubscriptionCount = 100
+        let numOfMaxSubscriptionCount = 200
         let maxSubsctiptionsSuccess = expectation(description: "Client can subscribe to max subscription count")
         maxSubsctiptionsSuccess.expectedFulfillmentCount = numOfMaxSubscriptionCount
 

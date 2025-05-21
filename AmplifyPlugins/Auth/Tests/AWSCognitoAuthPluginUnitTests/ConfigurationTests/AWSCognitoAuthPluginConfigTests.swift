@@ -235,5 +235,142 @@ class AWSCognitoAuthPluginConfigTests: XCTestCase {
             XCTFail("Should not throw error. \(error)")
         }
     }
+    
+    /// Test Auth configuration with valid config for user pool and identity pool, with secure storage preferences
+    ///
+    /// - Given: Given valid config for user pool and identity pool, and secure storage preferences
+    /// - When:
+    ///    - I configure auth with the given configuration and secure storage preferences
+    /// - Then:
+    ///    - I should not get any error while configuring auth
+    ///
+    func testConfigWithUserPoolAndIdentityPoolWithSecureStoragePreferences() throws {
+        let plugin = AWSCognitoAuthPlugin(
+            secureStoragePreferences: .init(
+                accessGroup: AccessGroup(name: "xx")
+            )
+        )
+        try Amplify.add(plugin: plugin)
+
+        let categoryConfig = AuthCategoryConfiguration(plugins: [
+            "awsCognitoAuthPlugin": [
+                "CredentialsProvider": ["CognitoIdentity": ["Default":
+                                                                ["PoolId": "xx",
+                                                                 "Region": "us-east-1"]
+                                                           ]],
+                "CognitoUserPool": ["Default": [
+                    "PoolId": "xx",
+                    "Region": "us-east-1",
+                    "AppClientId": "xx",
+                    "AppClientSecret": "xx"]]
+            ]
+        ])
+        let amplifyConfig = AmplifyConfiguration(auth: categoryConfig)
+        do {
+            try Amplify.configure(amplifyConfig)
+            
+            let escapeHatch = plugin.getEscapeHatch()
+            guard case .userPoolAndIdentityPool(let userPoolClient, let identityPoolClient) = escapeHatch else {
+                XCTFail("Expected .userPool, got \(escapeHatch)")
+                return
+            }
+            XCTAssertNotNil(userPoolClient)
+            XCTAssertNotNil(identityPoolClient)
+
+        } catch {
+            XCTFail("Should not throw error. \(error)")
+        }
+    }
+    
+    /// Test Auth configuration with valid config for user pool and identity pool, with network preferences and secure storage preferences
+    ///
+    /// - Given: Given valid config for user pool and identity pool, network preferences, and secure storage preferences
+    /// - When:
+    ///    - I configure auth with the given configuration, network preferences, and secure storage preferences
+    /// - Then:
+    ///    - I should not get any error while configuring auth
+    ///
+    func testConfigWithUserPoolAndIdentityPoolWithNetworkPreferencesAndSecureStoragePreferences() throws {
+        let plugin = AWSCognitoAuthPlugin(
+            networkPreferences: .init(
+                maxRetryCount: 2,
+                timeoutIntervalForRequest: 60,
+                timeoutIntervalForResource: 60),
+            secureStoragePreferences: .init(
+                accessGroup: AccessGroup(name: "xx")
+            )
+        )
+        try Amplify.add(plugin: plugin)
+
+        let categoryConfig = AuthCategoryConfiguration(plugins: [
+            "awsCognitoAuthPlugin": [
+                "CredentialsProvider": ["CognitoIdentity": ["Default":
+                                                                ["PoolId": "xx",
+                                                                 "Region": "us-east-1"]
+                                                           ]],
+                "CognitoUserPool": ["Default": [
+                    "PoolId": "xx",
+                    "Region": "us-east-1",
+                    "AppClientId": "xx",
+                    "AppClientSecret": "xx"]]
+            ]
+        ])
+        let amplifyConfig = AmplifyConfiguration(auth: categoryConfig)
+        do {
+            try Amplify.configure(amplifyConfig)
+            
+            let escapeHatch = plugin.getEscapeHatch()
+            guard case .userPoolAndIdentityPool(let userPoolClient, let identityPoolClient) = escapeHatch else {
+                XCTFail("Expected .userPool, got \(escapeHatch)")
+                return
+            }
+            XCTAssertNotNil(userPoolClient)
+            XCTAssertNotNil(identityPoolClient)
+
+        } catch {
+            XCTFail("Should not throw error. \(error)")
+        }
+    }
+
+    /// Test that the Auth plugin emits `InternalConfigureAuth` that is used by the Logging Category
+    ///
+    /// - Given: Given a valid config
+    /// - When:
+    ///    - I configure auth with the given configuration
+    /// - Then:
+    ///    - I should receive `InternalConfigureAuth` Hub event
+    ///
+    func testEmittingInternalConfigureAuthHubEvent() throws {
+        let expectation = expectation(description: "conifguration should complete")
+        let subscription = Amplify.Hub.publisher(for: .auth).sink { payload in
+
+            if payload.eventName == "InternalConfigureAuth" {
+                expectation.fulfill()
+            }
+        }
+        let plugin = AWSCognitoAuthPlugin()
+        try Amplify.add(plugin: plugin)
+
+        let categoryConfig = AuthCategoryConfiguration(plugins: [
+            "awsCognitoAuthPlugin": [
+                "CredentialsProvider": [
+                    "CognitoIdentity": [
+                        "Default": [
+                            "PoolId": "cc",
+                             "Region": "us-east-1"
+                        ]
+                    ]
+                ]
+            ]
+        ])
+        let amplifyConfig = AmplifyConfiguration(auth: categoryConfig)
+        do {
+            try Amplify.configure(amplifyConfig)
+        } catch {
+            XCTFail("Should not throw error. \(error)")
+        }
+        wait(for: [expectation], timeout: 5.0)
+        subscription.cancel()
+    }
 
 }

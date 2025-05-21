@@ -22,11 +22,13 @@ class ConfirmSignInTOTPTaskTests: BasePluginTest {
                 .resolvingChallenge(
                     .waitingForAnswer(
                         .testData(challenge: .softwareTokenMfa),
-                        .apiBased(.userSRP)
+                        .apiBased(.userSRP),
+                        .confirmSignInWithTOTPCode
                     ),
                     .totpMFA,
                     .apiBased(.userSRP))),
-            AuthorizationState.sessionEstablished(.testData))
+            AuthorizationState.sessionEstablished(.testData),
+            .notStarted)
     }
 
     /// Test a successful confirmSignIn call with .done as next step

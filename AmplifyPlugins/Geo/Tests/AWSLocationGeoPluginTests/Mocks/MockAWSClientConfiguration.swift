@@ -10,6 +10,8 @@ import ClientRuntime
 import AWSLocation
 import Foundation
 import XCTest
+import SmithyHTTPAPI
+import Smithy
 
 @testable import AWSLocationGeoPlugin
 @testable import AWSPluginsTestCommon
@@ -17,29 +19,35 @@ import XCTest
 extension LocationClient.LocationClientConfiguration {
     static func mock(region: String) throws -> LocationClient.LocationClientConfiguration {
         try .init(
+            awsCredentialIdentityResolver: MockAWSAuthService().getCredentialIdentityResolver(),
+            awsRetryMode: .standard, 
             region: region,
-            credentialsProvider: MockAWSAuthService().getCredentialsProvider(),
-            serviceSpecific: .init(
-                endpointResolver: MockEndPointResolver()
-            ),
-            signingRegion: "",
-            retryMode: .standard
+            signingRegion: "", 
+            endpointResolver: MockEndPointResolver()
         )
     }
 }
 
 class MockEndPointResolver: EndpointResolver {
-    func resolve(params: AWSLocation.EndpointParams) throws -> ClientRuntime.Endpoint {
+    func resolve(params: AWSLocation.EndpointParams) throws -> SmithyHTTPAPI.Endpoint {
         return Endpoint(host: "MockHost")
     }
 }
 
 class MockLogAgent: LogAgent {
+    func log(
+        level: Smithy.LogAgentLevel,
+        message: @autoclosure () -> String,
+        metadata: @autoclosure () -> [String : String]?,
+        source: @autoclosure () -> String,
+        file: String,
+        function: String,
+        line: UInt
+    ) {
+        print("MockLogAgent")
+    }
+    
     var name: String = ""
 
     var level: LogAgentLevel = .debug
-
-    func log(level: LogAgentLevel, message: String, metadata: [String: String]?, source: String, file: String, function: String, line: UInt) {
-        print("MockLogAgent")
-    }
 }

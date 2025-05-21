@@ -22,7 +22,7 @@ class AWSS3StoragePluginTestBase: XCTestCase {
 
     static var user1: String = "integTest\(UUID().uuidString)"
     static var user2: String = "integTest\(UUID().uuidString)"
-    static var password: String = "P123@\(UUID().uuidString)"
+    static var password: String = "Pp123@\(UUID().uuidString)"
     static var email1 = UUID().uuidString + "@" + UUID().uuidString + ".com"
     static var email2 = UUID().uuidString + "@" + UUID().uuidString + ".com"
 
@@ -30,6 +30,10 @@ class AWSS3StoragePluginTestBase: XCTestCase {
     static var isSecondUserSignedUp = false
 
     var requestRecorder: AWSS3StoragePluginRequestRecorder!
+
+    var useGen2Configuration: Bool {
+        ProcessInfo.processInfo.arguments.contains("GEN2")
+    }
 
     override func setUp() async throws {
         Self.logger.debug("setUp")
@@ -43,7 +47,11 @@ class AWSS3StoragePluginTestBase: XCTestCase {
 
             try Amplify.add(plugin: AWSCognitoAuthPlugin())
             try Amplify.add(plugin: storagePlugin)
-            try Amplify.configure()
+            if useGen2Configuration {
+                try Amplify.configure(with: .amplifyOutputs)
+            } else {
+                try Amplify.configure()
+            }
             if (try? await Amplify.Auth.getCurrentUser()) != nil {
                 await signOut()
             }
@@ -79,13 +87,17 @@ class AWSS3StoragePluginTestBase: XCTestCase {
         Amplify.Storage.downloadData(key: key)
     }
 
-    func uploadData(key: String, data: Data) async throws {
+    func uploadData(
+        key: String,
+        data: Data,
+        options: StorageUploadDataRequest.Options? = nil
+    ) async throws {
         let completeInvoked = expectation(description: "Completed is invoked")
         Task {
             let result = try await Amplify.Storage.uploadData(
                 key: key,
                 data: data,
-                options: nil
+                options: options
             ).value
 
             XCTAssertNotNil(result)
@@ -94,7 +106,27 @@ class AWSS3StoragePluginTestBase: XCTestCase {
 
         await fulfillment(of: [completeInvoked], timeout: 60)
     }
-    
+
+    func uploadData(
+        path: any StoragePath,
+        data: Data,
+        options: StorageUploadDataRequest.Options? = nil
+    ) async throws {
+        let completeInvoked = expectation(description: "Completed is invoked")
+        Task {
+            let result = try await Amplify.Storage.uploadData(
+                path: path,
+                data: data,
+                options: options
+            ).value
+
+            XCTAssertNotNil(result)
+            completeInvoked.fulfill()
+        }
+
+        await fulfillment(of: [completeInvoked], timeout: 60)
+    }
+
     func remove(key: String, accessLevel: StorageAccessLevel? = nil) async {
         var removeOptions: StorageRemoveRequest.Options? = nil
         if let accessLevel = accessLevel {
@@ -107,10 +139,26 @@ class AWSS3StoragePluginTestBase: XCTestCase {
         XCTAssertNotNil(result)
     }
 
-    static func getBucketFromConfig(forResource: String) throws -> String {
+    func getBucketFromConfig(forResource: String) throws -> String {
         let data = try TestConfigHelper.retrieve(forResource: forResource)
         let json = try JSONDecoder().decode(JSONValue.self, from: data)
+
         guard let bucket = json["storage"]?["plugins"]?["awsS3StoragePlugin"]?["bucket"] else {
+            throw "Could not retrieve bucket from config"
+        }
+
+        guard case let .string(bucketValue) = bucket else {
+            throw "bucket is not a string value"
+        }
+
+        return bucketValue
+    }
+
+    func getBucketFromAmplifyOutputs(forResource: String) throws -> String {
+        let data = try TestConfigHelper.retrieve(forResource: forResource)
+        let json = try JSONDecoder().decode(JSONValue.self, from: data)
+
+        guard let bucket = json["storage"]?["bucket_name"] else {
             throw "Could not retrieve bucket from config"
         }
 
@@ -170,17 +218,35 @@ class AWSS3StoragePluginTestBase: XCTestCase {
         }
     }
 
+    func wait(timeout: TimeInterval = 10, closure: @escaping () async throws -> ()) async {
+        let expectation = expectation(description: "Tasks completed")
+        Task {
+            defer { expectation.fulfill() }
+            do {
+                try await closure()
+            } catch {
+                XCTFail("Unexpected error: \(error)")
+            }
+        }
+
+        await fulfillment(of: [expectation], timeout: timeout)
+    }
+
     private func invalidateCurrentSession() {
         Self.logger.debug("Invalidating URLSession")
-        guard let plugin = try? Amplify.Storage.getPlugin(for: "awsS3StoragePlugin") as? AWSS3StoragePlugin,
-              let service = plugin.storageService as? AWSS3StorageService else {
-            print("Unable to to cast to AWSS3StorageService")
+        guard let plugin = try? Amplify.Storage.getPlugin(for: "awsS3StoragePlugin") as? AWSS3StoragePlugin else {
+            print("Unable to to cast to AWSS3StoragePlugin")
             return
         }
 
-        if let delegate = service.urlSession.delegate as? StorageServiceSessionDelegate {
-            delegate.storageService = nil
+        for serviceBehaviour in plugin.storageServicesByBucket.values {
+            guard let service = serviceBehaviour as? AWSS3StorageService else {
+                continue
+            }
+            if let delegate = service.urlSession.delegate as? StorageServiceSessionDelegate {
+                delegate.storageService = nil
+            }
+            service.urlSession.invalidateAndCancel()
         }
-        service.urlSession.invalidateAndCancel()
     }
 }

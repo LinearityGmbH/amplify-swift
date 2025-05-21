@@ -131,7 +131,7 @@ extension QueryPredicateOperation: GraphQLFilterConvertible {
             }
             let targetName = targetNames.first ?? defaultFieldName
             return targetName
-        case .hasOne(_, let targetNames):
+        case .hasOne(_, _, let targetNames):
             guard targetNames.count == 1 else {
                 preconditionFailure("QueryPredicate not supported on associated field with composite key: \(field)")
             }
@@ -187,6 +187,8 @@ extension QueryOperator {
             return "beginsWith"
         case .notContains:
             return "notContains"
+        case .attributeExists:
+            return "attributeExists"
         }
     }
 
@@ -211,6 +213,8 @@ extension QueryOperator {
         case .beginsWith(let value):
             return value
         case .notContains(let value):
+            return value
+        case .attributeExists(let value):
             return value
         }
     }

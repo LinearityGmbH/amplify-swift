@@ -13,11 +13,11 @@ struct VerifyPasswordSRP: Action {
     let identifier = "VerifyPasswordSRP"
 
     let stateData: SRPStateData
-    let authResponse: InitiateAuthOutput
+    let authResponse: SignInResponseBehavior
     let clientMetadata: ClientMetadata
 
     init(stateData: SRPStateData,
-         authResponse: InitiateAuthOutput,
+         authResponse: SignInResponseBehavior,
          clientMetadata: ClientMetadata) {
         self.stateData = stateData
         self.authResponse = authResponse
@@ -57,7 +57,7 @@ struct VerifyPasswordSRP: Action {
                                           serverPublicBHexString: serverPublicB,
                                           srpClient: srpClient,
                                           poolId: userPoolEnv.userPoolConfiguration.poolId)
-            let request = RespondToAuthChallengeInput.passwordVerifier(
+            let request = await RespondToAuthChallengeInput.passwordVerifier(
                 username: username,
                 stateData: stateData,
                 session: authResponse.session,

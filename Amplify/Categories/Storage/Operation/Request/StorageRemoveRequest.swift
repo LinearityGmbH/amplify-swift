@@ -14,7 +14,13 @@ public struct StorageRemoveRequest: AmplifyOperationRequest {
     /// The unique identifier for the object in storage
     ///
     /// - Tag: StorageRemoveRequest.key
+    @available(*, deprecated, message: "Use `path` in Storage API instead of `key`")
     public let key: String
+
+    /// The unique path for the object in storage
+    ///
+    /// - Tag: StorageRemoveRequest.path
+    public let path: (any StoragePath)?
 
     /// Options to adjust the behavior of this request, including plugin-options
     ///
@@ -22,9 +28,18 @@ public struct StorageRemoveRequest: AmplifyOperationRequest {
     public let options: Options
 
     /// - Tag: StorageRemoveRequest.init
+    @available(*, deprecated, message: "Use init(path:options)")
     public init(key: String, options: Options) {
         self.key = key
         self.options = options
+        self.path = nil
+    }
+
+    /// - Tag: StorageRemoveRequest.init
+    public init(path: any StoragePath, options: Options) {
+        self.key = ""
+        self.options = options
+        self.path = path
     }
 }
 
@@ -38,7 +53,13 @@ public extension StorageRemoveRequest {
         /// Access level of the storage system. Defaults to `public`
         ///
         /// - Tag: StorageRemoveRequestOptions.accessLevel
+        @available(*, deprecated, message: "Use `path` in Storage API instead of `Options`")
         public let accessLevel: StorageAccessLevel
+
+        /// A Storage Bucket that contains the object to remove. Defaults to `nil`, in which case the default one will be used.
+        ///
+        /// - Tag: StorageDownloadDataRequest.bucket
+        public let bucket: (any StorageBucket)?
 
         /// Extra plugin specific options, only used in special circumstances when the existing options do not provide
         /// a way to utilize the underlying storage system's functionality. See plugin documentation for expected
@@ -48,9 +69,22 @@ public extension StorageRemoveRequest {
         public let pluginOptions: Any?
 
         /// - Tag: StorageRemoveRequestOptions.init
-        public init(accessLevel: StorageAccessLevel = .guest,
-                    pluginOptions: Any? = nil) {
+        public init(
+            accessLevel: StorageAccessLevel = .guest,
+            pluginOptions: Any? = nil
+        ) {
             self.accessLevel = accessLevel
+            self.bucket = nil
+            self.pluginOptions = pluginOptions
+        }
+
+        /// - Tag: StorageRemoveRequestOptions.init
+        public init(
+            bucket: some StorageBucket,
+            pluginOptions: Any? = nil
+        ) {
+            self.accessLevel = .guest
+            self.bucket = bucket
             self.pluginOptions = pluginOptions
         }
     }

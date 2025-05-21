@@ -9,7 +9,8 @@ import Foundation
 import Amplify
 import AWSPluginsCore
 import AWSTranscribeStreaming
-import AWSClientRuntime
+import AwsCommonRuntimeKit
+import SmithyIdentity
 
 class AWSTranscribeStreamingAdapter: AWSTranscribeStreamingBehavior {
 
@@ -22,11 +23,11 @@ class AWSTranscribeStreamingAdapter: AWSTranscribeStreamingBehavior {
         let mediaSampleRateHertz: Int
     }
 
-    let credentialsProvider: CredentialsProviding
+    let credentialIdentityResolver: any AWSCredentialIdentityResolver
     let region: String
 
-    init(credentialsProvider: CredentialsProviding, region: String) {
-        self.credentialsProvider = credentialsProvider
+    init(credentialIdentityResolver: any AWSCredentialIdentityResolver, region: String) {
+        self.credentialIdentityResolver = credentialIdentityResolver
         self.region = region
     }
 
@@ -131,17 +132,17 @@ class AWSTranscribeStreamingAdapter: AWSTranscribeStreamingBehavior {
                             continuation.yield(transcribedPayload)
                             let isPartial = transcribedPayload.transcript?.results?.map(\.isPartial) ?? []
                             let shouldContinue = isPartial.allSatisfy { $0 }
-                            return shouldContinue
+                            return shouldContinue ? .continueToReceive : .stopAndInvalidateSession
                         } catch {
-                            return true
+                            return .continueToReceive
                         }
                     case .success(.string):
-                        return true
+                        return .continueToReceive
                     case .failure(let error):
                         continuation.finish(throwing: error)
-                        return false
+                        return .stopAndInvalidateSession
                     @unknown default:
-                        return true
+                        return .continueToReceive
                     }
                 }
             }

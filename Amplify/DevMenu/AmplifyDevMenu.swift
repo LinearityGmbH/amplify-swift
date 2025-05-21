@@ -5,13 +5,14 @@
 // SPDX-License-Identifier: Apache-2.0
 //
 
-#if os(iOS)
+#if os(iOS) && !os(visionOS)
 import Foundation
 import SwiftUI
 import UIKit
 
 /// Presents a developer menu using the provided `DevMenuPresentationContextProvider`
 /// upon notification from a `TriggerRecognizer`. Default recognizer is a `LongPressGestureRecognizer`
+@MainActor
 public final class AmplifyDevMenu: DevMenuBehavior, TriggerDelegate {
 
     weak var devMenuPresentationContextProvider: DevMenuPresentationContextProvider?

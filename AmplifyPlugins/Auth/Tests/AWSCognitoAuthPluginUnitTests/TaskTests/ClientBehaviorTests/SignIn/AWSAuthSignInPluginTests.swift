@@ -15,7 +15,7 @@ import ClientRuntime
 class AWSAuthSignInPluginTests: BasePluginTest {
 
     override var initialState: AuthState {
-        AuthState.configured(.signedOut(.init(lastKnownUserName: nil)), .configured)
+        AuthState.configured(.signedOut(.init(lastKnownUserName: nil)), .configured, .notStarted)
     }
 
     /// Test a signIn with valid inputs
@@ -954,12 +954,7 @@ class AWSAuthSignInPluginTests: BasePluginTest {
     func testSignInWithPasswordResetRequiredException2() async {
 
         self.mockIdentityProvider = MockIdentityProvider(mockInitiateAuthResponse: { _ in
-            throw try await AWSCognitoIdentityProvider.PasswordResetRequiredException(
-                httpResponse: .init(body: .empty, statusCode: .badRequest),
-                decoder: nil,
-                message: nil,
-                requestID: nil
-            )
+            throw AWSCognitoIdentityProvider.PasswordResetRequiredException()
         })
 
         let options = AuthSignInRequest.Options()
@@ -1132,9 +1127,7 @@ class AWSAuthSignInPluginTests: BasePluginTest {
     func testSignInWithUserNotConfirmedException2() async {
 
         self.mockIdentityProvider = MockIdentityProvider(mockInitiateAuthResponse: { _ in
-            throw try await AWSCognitoIdentityProvider.UserNotConfirmedException(
-                httpResponse: .init(body: .empty, statusCode: .badRequest)
-            )
+            throw AWSCognitoIdentityProvider.UserNotConfirmedException()
         })
 
         let options = AuthSignInRequest.Options()

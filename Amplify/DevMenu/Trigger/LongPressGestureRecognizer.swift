@@ -5,7 +5,7 @@
 // SPDX-License-Identifier: Apache-2.0
 //
 
-#if os(iOS)
+#if os(iOS) || os(visionOS)
 import Foundation
 import UIKit
 
@@ -46,14 +46,6 @@ class LongPressGestureRecognizer: NSObject, TriggerRecognizer, UIGestureRecogniz
         recognizer.addTarget(self, action: #selector(longPressed(sender:)))
         uiWindow?.addGestureRecognizer(recognizer)
         recognizer.delegate = self
-    }
-
-    deinit {
-        if let window = uiWindow {
-            window.removeGestureRecognizer(recognizer)
-        }
-        uiWindow = nil
-        triggerDelegate = nil
     }
 }
 #endif
