@@ -14,7 +14,9 @@ struct ASFAppInfo: ASFAppInfoBehavior {
     }
 
     var targetSDK: String {
+//TODO: Not compiling in Xcode 26: Investigate further
 //        var targetSDK: String = ""
+//
 //#if os(iOS) || os(watchOS) || os(tvOS)
 //        targetSDK = "\(__IPHONE_OS_VERSION_MIN_REQUIRED)"
 //#elseif os(macOS)
