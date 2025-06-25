@@ -5,9 +5,9 @@
 // SPDX-License-Identifier: Apache-2.0
 //
 
-import Foundation
-import Amplify
 import AWSPluginsCore
+import Amplify
+import Foundation
 
 public final class AWSCognitoAuthPlugin: AWSCognitoAuthPluginBehavior {
 
@@ -17,7 +17,7 @@ public final class AWSCognitoAuthPlugin: AWSCognitoAuthPluginBehavior {
 
     var credentialStoreStateMachine: CredentialStoreStateMachine!
 
-     /// A queue that regulates the execution of operations.
+    /// A queue that regulates the execution of operations.
     var queue: OperationQueue!
 
     /// Configuration for the auth plugin
@@ -46,14 +46,26 @@ public final class AWSCognitoAuthPlugin: AWSCognitoAuthPluginBehavior {
         return "awsCognitoAuthPlugin"
     }
 
+    /// Instantiates an instance of the AWSCognitoAuthPlugin with custom network preferences
     /// Instantiates an instance of the AWSCognitoAuthPlugin with optional custom network
     /// preferences and optional custom secure storage preferences
     /// - Parameters:
     ///   - networkPreferences: network preferences
     ///   - secureStoragePreferences: secure storage preferences
-    public init(networkPreferences: AWSCognitoNetworkPreferences? = nil,
-                secureStoragePreferences: AWSCognitoSecureStoragePreferences = AWSCognitoSecureStoragePreferences()) {
+    public init(
+        networkPreferences: AWSCognitoNetworkPreferences? = nil,
+        secureStoragePreferences: AWSCognitoSecureStoragePreferences =
+            AWSCognitoSecureStoragePreferences()
+    ) {
         self.networkPreferences = networkPreferences
         self.secureStoragePreferences = secureStoragePreferences
+    }
+
+    public func storeSignedInData(_ data: SignedInData) throws {
+        /// TODO: it's probably possible to make this better by emitting a right sequence of events:
+        /// e.g. execute .finalizeSignIn(data)?
+        try makeCredentialStore().saveCredential(
+            AmplifyCredentials.userPoolOnly(signedInData: data))
+        try self.configure(using: jsonConfiguration!)
     }
 }

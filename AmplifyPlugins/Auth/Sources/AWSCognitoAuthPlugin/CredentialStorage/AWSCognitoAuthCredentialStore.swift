@@ -205,7 +205,7 @@ extension AWSCognitoAuthCredentialStore: AmplifyAuthCredentialStoreBehavior {
         try keychain._remove(key)
     }
 
-    private func clearAllCredentials() throws {
+    func clearAllCredentials() throws {
         try keychain._removeAll()
     }
     

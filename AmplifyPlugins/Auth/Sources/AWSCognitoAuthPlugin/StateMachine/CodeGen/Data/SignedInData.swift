@@ -7,21 +7,38 @@
 
 import Foundation
 
-struct SignedInData {
+public struct SignedInData {
     let userId: String
     let username: String
     let signedInDate: Date
     let signInMethod: SignInMethod
     let deviceMetadata: DeviceMetadata
-    let cognitoUserPoolTokens: AWSCognitoUserPoolTokens
-    var isRefreshTokenExpired: Bool?
+    public let cognitoUserPoolTokens: AWSCognitoUserPoolTokens
+    public var isRefreshTokenExpired: Bool?
 
-    init(signedInDate: Date,
-         signInMethod: SignInMethod,
-         deviceMetadata: DeviceMetadata = .noData,
-         cognitoUserPoolTokens: AWSCognitoUserPoolTokens
+    public init(
+        userId: String,
+        username: String,
+        signedInDate: Date,
+        cognitoUserPoolTokens: AWSCognitoUserPoolTokens
     ) {
-        let user = try? TokenParserHelper.getAuthUser(accessToken: cognitoUserPoolTokens.accessToken)
+        self.userId = userId
+        self.username = username
+        self.signedInDate = signedInDate
+        self.signInMethod = .apiBased(.userSRP)
+        self.deviceMetadata = DeviceMetadata.noData
+        self.cognitoUserPoolTokens = cognitoUserPoolTokens
+        self.isRefreshTokenExpired = false
+    }
+
+    init(
+        signedInDate: Date,
+        signInMethod: SignInMethod,
+        deviceMetadata: DeviceMetadata = .noData,
+        cognitoUserPoolTokens: AWSCognitoUserPoolTokens
+    ) {
+        let user = try? TokenParserHelper.getAuthUser(
+            accessToken: cognitoUserPoolTokens.accessToken)
         self.userId = user?.userId ?? "unknown"
         self.username = user?.username ?? "unknown"
         self.signedInDate = signedInDate
@@ -32,9 +49,9 @@ struct SignedInData {
     }
 }
 
-extension SignedInData: Codable { }
+extension SignedInData: Codable {}
 
-extension SignedInData: Equatable { }
+extension SignedInData: Equatable {}
 
 extension SignedInData: CustomDebugDictionaryConvertible {
     var debugDictionary: [String: Any] {
@@ -45,13 +62,13 @@ extension SignedInData: CustomDebugDictionaryConvertible {
             "signInMethod": signInMethod,
             "deviceMetadata": deviceMetadata,
             "tokens": cognitoUserPoolTokens,
-            "refreshTokenExpired": isRefreshTokenExpired ?? false
+            "refreshTokenExpired": isRefreshTokenExpired ?? false,
         ]
     }
 }
 
 extension SignedInData: CustomDebugStringConvertible {
-    var debugDescription: String {
+    public var debugDescription: String {
         debugDictionary.debugDescription
     }
 }
