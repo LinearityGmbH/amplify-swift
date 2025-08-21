@@ -1,5 +1,32 @@
 # Changelog
 
+## 2.50.0 (2025-08-06)
+
+### Features
+
+- bump swift sdk version to 1.5.x (#4028)
+- update minimum supported macOS version to match Swift SDK (#4025)
+
+## 2.49.1 (2025-07-17)
+
+### Bug Fixes
+
+- **auth**: allow removing and adding identity pool for an already deployed app (#4022)
+- accessing Availability.h macros in Swift (Xcode 26 support) (#4013)
+
+## 2.49.0 (2025-06-30)
+
+### Features
+
+- **predictions**: No-Light/FaceMovementOnly challenge support (#3622)
+
+## 2.48.2 (2025-06-30)
+
+### Bug Fixes
+
+- **api**: fixing mis-classified errors (#4012)
+- **logging**: crash on release builds in rotation logger (#4009)
+
 ## 2.48.1 (2025-06-12)
 
 ### Bug Fixes

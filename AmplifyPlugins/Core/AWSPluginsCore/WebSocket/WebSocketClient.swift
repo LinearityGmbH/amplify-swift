@@ -28,7 +28,7 @@ public final actor WebSocketClient: NSObject {
     /// Interceptor for appending additional info before makeing the connection
     private var interceptor: WebSocketInterceptor?
     /// Internal wriable WebSocketEvent data stream
-    private let subject = PassthroughSubject<WebSocketEvent, Never>()
+    nonisolated private let subject = PassthroughSubject<WebSocketEvent, Never>()
 
     private let retryWithJitter = RetryWithJitter()
 
@@ -250,9 +250,7 @@ extension WebSocketClient: URLSessionWebSocketDelegate {
         switch (nsError.domain, nsError.code) {
         case (NSURLErrorDomain.self, NSURLErrorNetworkConnectionLost),
              (NSURLErrorDomain.self, NSURLErrorCannotConnectToHost),
-             (NSURLErrorDomain.self, NSURLErrorTimedOut),
              (NSURLErrorDomain.self, NSURLErrorNotConnectedToInternet),
-             (NSURLErrorDomain.self, NSURLErrorDataNotAllowed),
              (NSPOSIXErrorDomain.self, Int(ECONNABORTED)),
              (NSPOSIXErrorDomain.self, 57):
             self.subject.send(.error(WebSocketClient.Error.connectionLost))
