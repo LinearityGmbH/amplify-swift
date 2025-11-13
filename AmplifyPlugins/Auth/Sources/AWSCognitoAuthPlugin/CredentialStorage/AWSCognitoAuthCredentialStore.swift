@@ -5,8 +5,8 @@
 // SPDX-License-Identifier: Apache-2.0
 //
 
-import Foundation
 import Amplify
+import Foundation
 @_spi(KeychainStore) import AWSPluginsCore
 
 struct AWSCognitoAuthCredentialStore {
@@ -51,18 +51,24 @@ struct AWSCognitoAuthCredentialStore {
         } else {
             self.keychain = KeychainStore(service: service)
         }
-        
+
         let oldAccessGroup = retrieveStoredAccessGroup()
         if migrateKeychainItemsOfUserSession {
             try? migrateKeychainItemsToAccessGroup()
         } else if oldAccessGroup == nil && oldAccessGroup != accessGroup {
             try? KeychainStore(service: service)._removeAll()
         }
-            
+
         saveStoredAccessGroup()
 
         if !userDefaults.bool(forKey: isKeychainConfiguredKey) {
-            try? clearAllCredentials()
+            // We can't reliably clear credentials if the Keychain has a shared access group.
+            // This is because each app/extension has its own UserDefaults.
+            // If a user authenticates in an app, the app or extension that shares the keychain would clear the shared credentials.
+            // We must only clear credentials if a shared Keychain is not being used.
+            if accessGroup == nil {
+                try? clearAllCredentials() // clear if not using shared keychain
+            }
             userDefaults.set(true, forKey: isKeychainConfiguredKey)
         }
 
@@ -104,7 +110,8 @@ struct AWSCognitoAuthCredentialStore {
                     oldUserPoolConfiguration != nil &&
                     UserPoolConfigurationData.isNamespacingEqual(
                         lhs: oldUserPoolConfiguration,
-                        rhs: newUserPoolConfiguration) {
+                        rhs: newUserPoolConfiguration
+                    ) {
             // retrieve data from the old namespace and save with the new namespace
             if let oldCognitoCredentialsData = try? keychain._getData(oldNameSpace) {
                 try? keychain._set(oldCognitoCredentialsData, key: newNameSpace)
@@ -138,13 +145,15 @@ struct AWSCognitoAuthCredentialStore {
 
     private func generateDeviceMetadataKey(
         for username: String,
-        with configuration: AuthConfiguration) -> String {
+        with configuration: AuthConfiguration
+    ) -> String {
             return "\(storeKey(for: authConfiguration)).\(username).\(deviceMetadataKey)"
     }
 
     private func generateASFDeviceKey(
         for username: String,
-        with configuration: AuthConfiguration) -> String {
+        with configuration: AuthConfiguration
+    ) -> String {
             return "\(storeKey(for: authConfiguration)).\(username).\(deviceASFKey)"
     }
 
@@ -222,11 +231,11 @@ extension AWSCognitoAuthCredentialStore: AmplifyAuthCredentialStoreBehavior {
     func clearAllCredentials() throws {
         try keychain._removeAll()
     }
-    
+
     private func retrieveStoredAccessGroup() -> String? {
         return userDefaults.string(forKey: accessGroupKey)
     }
-    
+
     private func saveStoredAccessGroup() {
         if let accessGroup {
             userDefaults.set(accessGroup, forKey: accessGroupKey)
@@ -234,25 +243,25 @@ extension AWSCognitoAuthCredentialStore: AmplifyAuthCredentialStoreBehavior {
             userDefaults.removeObject(forKey: accessGroupKey)
         }
     }
-    
+
     private func migrateKeychainItemsToAccessGroup() throws {
         let oldAccessGroup = retrieveStoredAccessGroup()
-        
+
         if oldAccessGroup == accessGroup {
             log.info("[AWSCognitoAuthCredentialStore] Stored access group is the same as current access group, aborting migration")
             return
         }
-        
+
         let oldService = oldAccessGroup != nil ? sharedService : service
         let newService = accessGroup != nil ? sharedService : service
-        
+
         do {
             try KeychainStoreMigrator(oldService: oldService, newService: newService, oldAccessGroup: oldAccessGroup, newAccessGroup: accessGroup).migrate()
         } catch {
             log.error("[AWSCognitoAuthCredentialStore] Migration has failed")
             return
         }
-        
+
         log.verbose("[AWSCognitoAuthCredentialStore] Migration of keychain items from old access group to new access group successful")
     }
 
@@ -261,7 +270,7 @@ extension AWSCognitoAuthCredentialStore: AmplifyAuthCredentialStoreBehavior {
 /// Helpers for encode and decoding
 private extension AWSCognitoAuthCredentialStore {
 
-    func encode<T: Codable>(object: T) throws -> Data {
+    func encode(object: some Codable) throws -> Data {
         do {
             return try JSONEncoder().encode(object)
         } catch {

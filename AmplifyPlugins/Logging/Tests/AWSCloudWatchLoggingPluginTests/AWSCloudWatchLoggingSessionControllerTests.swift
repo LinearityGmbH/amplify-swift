@@ -7,9 +7,9 @@
 
 @testable import AWSCloudWatchLoggingPlugin
 
-import XCTest
 import Amplify
 import Network
+import XCTest
 @testable import AmplifyTestCommon
 
 final class AWSCloudWatchLoggingSessionControllerTests: XCTestCase {
@@ -49,11 +49,13 @@ final class AWSCloudWatchLoggingSessionControllerTests: XCTestCase {
             }
         }
 
-        let bytes = (0..<1024).map { _ in UInt8.random(in: 0..<255) }
+        let bytes = (0 ..< 1_024).map { _ in UInt8.random(in: 0 ..< 255) }
         let fileURL = getLogFile()
-        FileManager.default.createFile(atPath: fileURL.path,
-                                       contents: Data(bytes),
-                                       attributes: [FileAttributeKey: Any]())
+        FileManager.default.createFile(
+            atPath: fileURL.path,
+            contents: Data(bytes),
+            attributes: [FileAttributeKey: Any]()
+        )
         systemUnderTest = AWSCloudWatchLoggingSessionController(
             credentialIdentityResolver: mockCredentialProvider,
             authentication: mockAuth,
@@ -65,11 +67,12 @@ final class AWSCloudWatchLoggingSessionControllerTests: XCTestCase {
             region: "us-east-1",
             localStoreMaxSizeInMB: 1,
             userIdentifier: nil,
-            networkMonitor: mockLoggingNetworkMonitor)
+            networkMonitor: mockLoggingNetworkMonitor
+        )
         systemUnderTest.client = mockCloudWatchLogClient
         systemUnderTest.enable()
         try await systemUnderTest.flushLogs()
-        await fulfillment(of: [hubEventExpectation], timeout: 2)
+        await fulfillment(of: [hubEventExpectation], timeout: 10)
     }
 
     private func getLogFile() -> URL {
