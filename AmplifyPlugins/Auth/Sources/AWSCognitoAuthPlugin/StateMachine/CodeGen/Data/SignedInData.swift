@@ -37,8 +37,7 @@ public struct SignedInData {
         deviceMetadata: DeviceMetadata = .noData,
         cognitoUserPoolTokens: AWSCognitoUserPoolTokens
     ) {
-        let user = try? TokenParserHelper.getAuthUser(
-            accessToken: cognitoUserPoolTokens.accessToken)
+        let user = try? TokenParserHelper.getAuthUser(accessToken: cognitoUserPoolTokens.accessToken)
         self.userId = user?.userId ?? "unknown"
         self.username = user?.username ?? "unknown"
         self.signedInDate = signedInDate

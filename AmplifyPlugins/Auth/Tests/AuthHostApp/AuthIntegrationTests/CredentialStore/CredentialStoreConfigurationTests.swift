@@ -34,7 +34,8 @@ class CredentialStoreConfigurationTests: AWSAuthBaseTest {
         let awsCredentials = AuthAWSCognitoCredentials.testData
         let initialCognitoCredentials = AmplifyCredentials.identityPoolOnly(
             identityID: identityId,
-            credentials: awsCredentials)
+            credentials: awsCredentials
+        )
         let configData = Defaults.makeIdentityConfigData()
         let initialAuthConfig = AuthConfiguration.identityPools(configData)
         let credentialStore = AWSCognitoAuthCredentialStore(authConfiguration: initialAuthConfig)
@@ -46,8 +47,10 @@ class CredentialStoreConfigurationTests: AWSAuthBaseTest {
 
         // When configuration changed
         let userPoolConfiguration = Defaults.makeDefaultUserPoolConfigData()
-        let newAuthConfig = AuthConfiguration.userPoolsAndIdentityPools(userPoolConfiguration,
-                                                                        configData)
+        let newAuthConfig = AuthConfiguration.userPoolsAndIdentityPools(
+            userPoolConfiguration,
+            configData
+        )
         let newCredentialStore = AWSCognitoAuthCredentialStore(authConfiguration: newAuthConfig)
 
         // Then
@@ -78,10 +81,12 @@ class CredentialStoreConfigurationTests: AWSAuthBaseTest {
         let initialCognitoCredentials = AmplifyCredentials.userPoolAndIdentityPool(
             signedInData: .testData,
             identityID: identityId,
-            credentials: awsCredentials)
+            credentials: awsCredentials
+        )
         let initialAuthConfig = AuthConfiguration.userPoolsAndIdentityPools(
             Defaults.makeDefaultUserPoolConfigData(),
-            Defaults.makeIdentityConfigData())
+            Defaults.makeIdentityConfigData()
+        )
         let credentialStore = AWSCognitoAuthCredentialStore(authConfiguration: initialAuthConfig)
         do {
             try credentialStore.saveCredential(initialCognitoCredentials)
@@ -91,20 +96,25 @@ class CredentialStoreConfigurationTests: AWSAuthBaseTest {
 
         // When configuration changed
         let updatedConfig = AuthConfiguration.userPoolsAndIdentityPools(
-            UserPoolConfigurationData(poolId: Defaults.userPoolId,
-                                      clientId: Defaults.appClientId,
-                                      region: Defaults.regionString,
-                                      clientSecret: Defaults.appClientSecret,
-                                      pinpointAppId: "somethingNew"),
-            Defaults.makeIdentityConfigData())
+            UserPoolConfigurationData(
+                poolId: Defaults.userPoolId,
+                clientId: Defaults.appClientId,
+                region: Defaults.regionString,
+                clientSecret: Defaults.appClientSecret,
+                pinpointAppId: "somethingNew"
+            ),
+            Defaults.makeIdentityConfigData()
+        )
         // When configuration don't change changed
         let newCredentialStore = AWSCognitoAuthCredentialStore(authConfiguration: updatedConfig)
 
         // Then
         guard let credentials = try? newCredentialStore.retrieveCredential(),
-              case .userPoolAndIdentityPool(let retrievedTokens,
-                                            let retrievedIdentityID,
-                                            let retrievedCredentials) = credentials else {
+              case .userPoolAndIdentityPool(
+                  let retrievedTokens,
+                  let retrievedIdentityID,
+                  let retrievedCredentials
+              ) = credentials else {
             XCTFail("Unable to retrieve Credentials")
             return
         }
@@ -130,7 +140,8 @@ class CredentialStoreConfigurationTests: AWSAuthBaseTest {
         let awsCredentials = AuthAWSCognitoCredentials.testData
         let initialCognitoCredentials = AmplifyCredentials.identityPoolOnly(
             identityID: identityId,
-            credentials: awsCredentials)
+            credentials: awsCredentials
+        )
         let initialAuthConfig = AuthConfiguration.userPools(Defaults.makeDefaultUserPoolConfigData())
         let credentialStore = AWSCognitoAuthCredentialStore(authConfiguration: initialAuthConfig)
         do {
@@ -142,7 +153,8 @@ class CredentialStoreConfigurationTests: AWSAuthBaseTest {
         // When configuration changed
         let newAuthConfig = AuthConfiguration.userPoolsAndIdentityPools(
             Defaults.makeDefaultUserPoolConfigData(),
-            Defaults.makeIdentityConfigData())
+            Defaults.makeIdentityConfigData()
+        )
         let newCredentialStore = AWSCognitoAuthCredentialStore(authConfiguration: newAuthConfig)
 
         // Then
@@ -164,7 +176,8 @@ class CredentialStoreConfigurationTests: AWSAuthBaseTest {
         let awsCredentials = AuthAWSCognitoCredentials.testData
         let initialCognitoCredentials = AmplifyCredentials.identityPoolOnly(
             identityID: identityId,
-            credentials: awsCredentials)
+            credentials: awsCredentials
+        )
 
         let initialAuthConfig = AuthConfiguration.identityPools(Defaults.makeIdentityConfigData())
         let credentialStore = AWSCognitoAuthCredentialStore(authConfiguration: initialAuthConfig)
@@ -178,7 +191,8 @@ class CredentialStoreConfigurationTests: AWSAuthBaseTest {
         let newAuthConfig = AuthConfiguration.identityPools(
             IdentityPoolConfigurationData(
                 poolId: "changed",
-                region: "changed"))
+                region: "changed"
+            ))
         let newCredentialStore = AWSCognitoAuthCredentialStore(authConfiguration: newAuthConfig)
 
         // Then
@@ -201,10 +215,12 @@ class CredentialStoreConfigurationTests: AWSAuthBaseTest {
         let initialCognitoCredentials = AmplifyCredentials.userPoolAndIdentityPool(
             signedInData: .testData,
             identityID: identityId,
-            credentials: awsCredentials)
+            credentials: awsCredentials
+        )
         let initialAuthConfig = AuthConfiguration.userPoolsAndIdentityPools(
             Defaults.makeDefaultUserPoolConfigData(),
-            Defaults.makeIdentityConfigData())
+            Defaults.makeIdentityConfigData()
+        )
         let credentialStore = AWSCognitoAuthCredentialStore(authConfiguration: initialAuthConfig)
         do {
             try credentialStore.saveCredential(initialCognitoCredentials)
@@ -220,7 +236,7 @@ class CredentialStoreConfigurationTests: AWSAuthBaseTest {
         let credentials = try? newCredentialStore.retrieveCredential()
         XCTAssertNil(credentials)
     }
-    
+
     /// Test migrating to a shared access group keeps credentials
     ///
     /// - Given: A user registered is configured
@@ -238,10 +254,12 @@ class CredentialStoreConfigurationTests: AWSAuthBaseTest {
         let initialCognitoCredentials = AmplifyCredentials.userPoolAndIdentityPool(
             signedInData: .testData,
             identityID: identityId,
-            credentials: awsCredentials)
+            credentials: awsCredentials
+        )
         let initialAuthConfig = AuthConfiguration.userPoolsAndIdentityPools(
             Defaults.makeDefaultUserPoolConfigData(),
-            Defaults.makeIdentityConfigData())
+            Defaults.makeIdentityConfigData()
+        )
         let credentialStore = AWSCognitoAuthCredentialStore(authConfiguration: initialAuthConfig)
         do {
             try credentialStore.saveCredential(initialCognitoCredentials)
@@ -258,9 +276,11 @@ class CredentialStoreConfigurationTests: AWSAuthBaseTest {
 
         // Then
         guard let credentials = try? newCredentialStore.retrieveCredential(),
-              case .userPoolAndIdentityPool(let retrievedTokens,
-                                            let retrievedIdentityID,
-                                            let retrievedCredentials) = credentials else {
+              case .userPoolAndIdentityPool(
+                  let retrievedTokens,
+                  let retrievedIdentityID,
+                  let retrievedCredentials
+              ) = credentials else {
             XCTFail("Unable to retrieve Credentials")
             return
         }
@@ -271,7 +291,7 @@ class CredentialStoreConfigurationTests: AWSAuthBaseTest {
         XCTAssertEqual(retrievedIdentityID, identityId)
         XCTAssertEqual(retrievedCredentials, awsCredentials)
     }
-    
+
     /// Test migrating from a shared access group to an unshared access group keeps credentials
     ///
     /// - Given: A user registered is configured
@@ -289,10 +309,12 @@ class CredentialStoreConfigurationTests: AWSAuthBaseTest {
         let initialCognitoCredentials = AmplifyCredentials.userPoolAndIdentityPool(
             signedInData: .testData,
             identityID: identityId,
-            credentials: awsCredentials)
+            credentials: awsCredentials
+        )
         let initialAuthConfig = AuthConfiguration.userPoolsAndIdentityPools(
             Defaults.makeDefaultUserPoolConfigData(),
-            Defaults.makeIdentityConfigData())
+            Defaults.makeIdentityConfigData()
+        )
         #if os(watchOS)
         let credentialStore = AWSCognitoAuthCredentialStore(authConfiguration: initialAuthConfig, accessGroup: keychainAccessGroupWatch)
         #else
@@ -309,9 +331,11 @@ class CredentialStoreConfigurationTests: AWSAuthBaseTest {
 
         // Then
         guard let credentials = try? newCredentialStore.retrieveCredential(),
-              case .userPoolAndIdentityPool(let retrievedTokens,
-                                            let retrievedIdentityID,
-                                            let retrievedCredentials) = credentials else {
+              case .userPoolAndIdentityPool(
+                  let retrievedTokens,
+                  let retrievedIdentityID,
+                  let retrievedCredentials
+              ) = credentials else {
             XCTFail("Unable to retrieve Credentials")
             return
         }
@@ -322,7 +346,7 @@ class CredentialStoreConfigurationTests: AWSAuthBaseTest {
         XCTAssertEqual(retrievedIdentityID, identityId)
         XCTAssertEqual(retrievedCredentials, awsCredentials)
     }
-    
+
     /// Test migrating from a shared access group to another shared access group keeps credentials
     ///
     /// - Given: A user registered is configured
@@ -340,10 +364,12 @@ class CredentialStoreConfigurationTests: AWSAuthBaseTest {
         let initialCognitoCredentials = AmplifyCredentials.userPoolAndIdentityPool(
             signedInData: .testData,
             identityID: identityId,
-            credentials: awsCredentials)
+            credentials: awsCredentials
+        )
         let initialAuthConfig = AuthConfiguration.userPoolsAndIdentityPools(
             Defaults.makeDefaultUserPoolConfigData(),
-            Defaults.makeIdentityConfigData())
+            Defaults.makeIdentityConfigData()
+        )
         #if os(watchOS)
         let credentialStore = AWSCognitoAuthCredentialStore(authConfiguration: initialAuthConfig, accessGroup: keychainAccessGroupWatch)
         #else
@@ -364,9 +390,11 @@ class CredentialStoreConfigurationTests: AWSAuthBaseTest {
 
         // Then
         guard let credentials = try? newCredentialStore.retrieveCredential(),
-              case .userPoolAndIdentityPool(let retrievedTokens,
-                                            let retrievedIdentityID,
-                                            let retrievedCredentials) = credentials else {
+              case .userPoolAndIdentityPool(
+                  let retrievedTokens,
+                  let retrievedIdentityID,
+                  let retrievedCredentials
+              ) = credentials else {
             XCTFail("Unable to retrieve Credentials")
             return
         }
@@ -377,7 +405,7 @@ class CredentialStoreConfigurationTests: AWSAuthBaseTest {
         XCTAssertEqual(retrievedIdentityID, identityId)
         XCTAssertEqual(retrievedCredentials, awsCredentials)
     }
-    
+
     /// Test moving to a shared access group without migration should not keep credentials
     ///
     /// - Given: A user registered is configured
@@ -393,10 +421,12 @@ class CredentialStoreConfigurationTests: AWSAuthBaseTest {
         let initialCognitoCredentials = AmplifyCredentials.userPoolAndIdentityPool(
             signedInData: .testData,
             identityID: identityId,
-            credentials: awsCredentials)
+            credentials: awsCredentials
+        )
         let initialAuthConfig = AuthConfiguration.userPoolsAndIdentityPools(
             Defaults.makeDefaultUserPoolConfigData(),
-            Defaults.makeIdentityConfigData())
+            Defaults.makeIdentityConfigData()
+        )
         let credentialStore = AWSCognitoAuthCredentialStore(authConfiguration: initialAuthConfig)
         do {
             try credentialStore.saveCredential(initialCognitoCredentials)
@@ -413,13 +443,15 @@ class CredentialStoreConfigurationTests: AWSAuthBaseTest {
 
         // Then
         guard let credentials = try? newCredentialStore.retrieveCredential(),
-              case .userPoolAndIdentityPool(let retrievedTokens,
-                                            let retrievedIdentityID,
-                                            let retrievedCredentials) = credentials else {
+              case .userPoolAndIdentityPool(
+                  let retrievedTokens,
+                  let retrievedIdentityID,
+                  let retrievedCredentials
+              ) = credentials else {
             // Expected
             return
         }
-        
+
         // If credentials are present, they should not be the same as those that were not migrated
         XCTAssertNotNil(credentials)
         XCTAssertNotNil(retrievedTokens)
@@ -443,10 +475,12 @@ class CredentialStoreConfigurationTests: AWSAuthBaseTest {
         let initialCognitoCredentials = AmplifyCredentials.userPoolAndIdentityPool(
             signedInData: .testData,
             identityID: identityId,
-            credentials: awsCredentials)
+            credentials: awsCredentials
+        )
         let initialAuthConfig = AuthConfiguration.userPoolsAndIdentityPools(
             Defaults.makeDefaultUserPoolConfigData(),
-            Defaults.makeIdentityConfigData())
+            Defaults.makeIdentityConfigData()
+        )
         #if os(watchOS)
         let credentialStore = AWSCognitoAuthCredentialStore(authConfiguration: initialAuthConfig, accessGroup: keychainAccessGroupWatch)
         #else
@@ -463,13 +497,15 @@ class CredentialStoreConfigurationTests: AWSAuthBaseTest {
 
         // Then
         guard let credentials = try? newCredentialStore.retrieveCredential(),
-              case .userPoolAndIdentityPool(let retrievedTokens,
-                                            let retrievedIdentityID,
-                                            let retrievedCredentials) = credentials else {
+              case .userPoolAndIdentityPool(
+                  let retrievedTokens,
+                  let retrievedIdentityID,
+                  let retrievedCredentials
+              ) = credentials else {
             // Expected
             return
         }
-        
+
         // If credentials are present, they should not be the same as those that were not migrated
         XCTAssertNotNil(credentials)
         XCTAssertNotNil(retrievedTokens)
@@ -493,10 +529,12 @@ class CredentialStoreConfigurationTests: AWSAuthBaseTest {
         let initialCognitoCredentials = AmplifyCredentials.userPoolAndIdentityPool(
             signedInData: .testData,
             identityID: identityId,
-            credentials: awsCredentials)
+            credentials: awsCredentials
+        )
         let initialAuthConfig = AuthConfiguration.userPoolsAndIdentityPools(
             Defaults.makeDefaultUserPoolConfigData(),
-            Defaults.makeIdentityConfigData())
+            Defaults.makeIdentityConfigData()
+        )
         #if os(watchOS)
         let credentialStore = AWSCognitoAuthCredentialStore(authConfiguration: initialAuthConfig, accessGroup: keychainAccessGroupWatch)
         #else
@@ -517,18 +555,175 @@ class CredentialStoreConfigurationTests: AWSAuthBaseTest {
 
         // Then
         guard let credentials = try? newCredentialStore.retrieveCredential(),
-              case .userPoolAndIdentityPool(let retrievedTokens,
-                                            let retrievedIdentityID,
-                                            let retrievedCredentials) = credentials else {
+              case .userPoolAndIdentityPool(
+                  let retrievedTokens,
+                  let retrievedIdentityID,
+                  let retrievedCredentials
+              ) = credentials else {
             // Expected
             return
         }
-        
+
         // If credentials are present, they should not be the same as those that were not migrated
         XCTAssertNotNil(credentials)
         XCTAssertNotNil(retrievedTokens)
         XCTAssertNotNil(retrievedIdentityID)
         XCTAssertNotNil(retrievedCredentials)
         XCTAssertNotEqual(retrievedCredentials, awsCredentials)
+    }
+
+    /// Test that shared keychain credentials are NOT cleared on fresh install when using access group
+    ///
+    /// - Given: A user has credentials stored in shared keychain
+    /// - When: The credential store is initialized with fresh UserDefaults but same access group
+    /// - Then: The shared keychain credentials should NOT be cleared
+    ///
+    func testSharedKeychainCredentialsNotClearedOnFreshInstall() {
+        // Given: Save credentials to shared keychain
+        let identityId = "identityId"
+        let awsCredentials = AuthAWSCognitoCredentials.testData
+        let initialCognitoCredentials = AmplifyCredentials.userPoolAndIdentityPool(
+            signedInData: .testData,
+            identityID: identityId,
+            credentials: awsCredentials
+        )
+        let authConfig = AuthConfiguration.userPoolsAndIdentityPools(
+            Defaults.makeDefaultUserPoolConfigData(),
+            Defaults.makeIdentityConfigData()
+        )
+
+        #if os(watchOS)
+        let accessGroup = keychainAccessGroupWatch
+        #else
+        let accessGroup = keychainAccessGroup
+        #endif
+
+        let credentialStore = AWSCognitoAuthCredentialStore(
+            authConfiguration: authConfig,
+            accessGroup: accessGroup
+        )
+
+        do {
+            try credentialStore.saveCredential(initialCognitoCredentials)
+        } catch {
+            XCTFail("Unable to save credentials")
+        }
+
+        // Verify credentials are saved
+        guard let savedCredentials = try? credentialStore.retrieveCredential() else {
+            XCTFail("Unable to retrieve saved credentials")
+            return
+        }
+        XCTAssertNotNil(savedCredentials)
+
+        // When: Simulate fresh install by clearing UserDefaults flag
+        UserDefaults.standard.removeObject(forKey: "amplify_secure_storage_scopes.awsCognitoAuthPlugin.isKeychainConfigured")
+
+        // Initialize new credential store with same access group (simulates app extension scenario)
+        let newCredentialStore = AWSCognitoAuthCredentialStore(
+            authConfiguration: authConfig,
+            accessGroup: accessGroup
+        )
+
+        // Then: Shared keychain credentials should NOT be cleared
+        guard let retrievedCredentials = try? newCredentialStore.retrieveCredential(),
+              case .userPoolAndIdentityPool(
+                  let retrievedTokens,
+                  let retrievedIdentityID,
+                  let retrievedAWSCredentials
+              ) = retrievedCredentials else {
+            XCTFail("Shared keychain credentials should not be cleared")
+            return
+        }
+
+        XCTAssertNotNil(retrievedCredentials)
+        XCTAssertNotNil(retrievedTokens)
+        XCTAssertNotNil(retrievedIdentityID)
+        XCTAssertNotNil(retrievedAWSCredentials)
+        XCTAssertEqual(retrievedIdentityID, identityId)
+        XCTAssertEqual(retrievedAWSCredentials, awsCredentials)
+    }
+
+    /// Test that non-shared keychain credentials ARE cleared on fresh install
+    ///
+    /// - Given: A user has credentials stored in non-shared keychain
+    /// - When: The credential store is initialized with fresh UserDefaults and no access group
+    /// - Then: The keychain credentials should be cleared
+    ///
+    func testNonSharedKeychainCredentialsClearedOnFreshInstall() {
+        // Given: Save credentials to non-shared keychain
+        let identityId = "identityId"
+        let awsCredentials = AuthAWSCognitoCredentials.testData
+        let initialCognitoCredentials = AmplifyCredentials.userPoolAndIdentityPool(
+            signedInData: .testData,
+            identityID: identityId,
+            credentials: awsCredentials
+        )
+        let authConfig = AuthConfiguration.userPoolsAndIdentityPools(
+            Defaults.makeDefaultUserPoolConfigData(),
+            Defaults.makeIdentityConfigData()
+        )
+
+        let credentialStore = AWSCognitoAuthCredentialStore(authConfiguration: authConfig)
+
+        do {
+            try credentialStore.saveCredential(initialCognitoCredentials)
+        } catch {
+            XCTFail("Unable to save credentials")
+        }
+
+        // Verify credentials are saved
+        guard let savedCredentials = try? credentialStore.retrieveCredential() else {
+            XCTFail("Unable to retrieve saved credentials")
+            return
+        }
+        XCTAssertNotNil(savedCredentials)
+
+        // When: Simulate fresh install by clearing UserDefaults flag
+        UserDefaults.standard.removeObject(forKey: "amplify_secure_storage_scopes.awsCognitoAuthPlugin.isKeychainConfigured")
+
+        // Initialize new credential store without access group
+        let newCredentialStore = AWSCognitoAuthCredentialStore(authConfiguration: authConfig)
+
+        // Then: Non-shared keychain credentials should be cleared
+        let retrievedCredentials = try? newCredentialStore.retrieveCredential()
+        XCTAssertNil(retrievedCredentials, "Non-shared keychain credentials should be cleared on fresh install")
+    }
+
+    /// Test that UserDefaults flag is properly set regardless of access group usage
+    ///
+    /// - Given: Fresh UserDefaults state
+    /// - When: Credential store is initialized with or without access group
+    /// - Then: UserDefaults flag should be set in both cases
+    ///
+    func testUserDefaultsFlagSetRegardlessOfAccessGroup() {
+        let authConfig = AuthConfiguration.userPoolsAndIdentityPools(
+            Defaults.makeDefaultUserPoolConfigData(),
+            Defaults.makeIdentityConfigData()
+        )
+        let userDefaultsKey = "amplify_secure_storage_scopes.awsCognitoAuthPlugin.isKeychainConfigured"
+
+        // Test without access group
+        UserDefaults.standard.removeObject(forKey: userDefaultsKey)
+        XCTAssertFalse(UserDefaults.standard.bool(forKey: userDefaultsKey))
+
+        _ = AWSCognitoAuthCredentialStore(authConfiguration: authConfig)
+        XCTAssertTrue(UserDefaults.standard.bool(forKey: userDefaultsKey))
+
+        // Test with access group
+        UserDefaults.standard.removeObject(forKey: userDefaultsKey)
+        XCTAssertFalse(UserDefaults.standard.bool(forKey: userDefaultsKey))
+
+        #if os(watchOS)
+        let accessGroup = keychainAccessGroupWatch
+        #else
+        let accessGroup = keychainAccessGroup
+        #endif
+
+        _ = AWSCognitoAuthCredentialStore(
+            authConfiguration: authConfig,
+            accessGroup: accessGroup
+        )
+        XCTAssertTrue(UserDefaults.standard.bool(forKey: userDefaultsKey))
     }
 }

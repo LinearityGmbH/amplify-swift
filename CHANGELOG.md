@@ -1,5 +1,33 @@
 # Changelog
 
+## 2.51.5 (2025-11-10)
+
+### Bug Fixes
+
+- **predictions**: remove liveness event listeners on session completion (#4092)
+
+## 2.51.4 (2025-10-28)
+
+### Bug Fixes
+
+- **auth**: add missing state transitions during auto sign in (#4065)
+
+## 2.51.3 (2025-10-23)
+
+## 2.51.2 (2025-10-13)
+
+### Bug Fixes
+
+- **predictions**: close websocket with runtime error on service exception (#4072)
+
+## 2.51.1 (2025-10-02)
+
+## 2.51.0 (2025-09-16)
+
+### Features
+
+- **auth**: Refresh Token Rotation (#4050)
+
 ## 2.50.0 (2025-08-06)
 
 ### Features
